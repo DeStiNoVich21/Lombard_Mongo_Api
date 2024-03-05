@@ -159,5 +159,10 @@ namespace Lombard_Mongo_Api.MongoRepository.GenericRepository
                 throw;
             }
         }
+
+        public Task GetByIdAsync(string id)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

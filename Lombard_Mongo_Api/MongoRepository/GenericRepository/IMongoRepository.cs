@@ -13,5 +13,6 @@ namespace Lombard_Mongo_Api.MongoRepository.GenericRepository
         void DeleteById(string id);
         void DeleteOne(Expression<Func<TDocument, bool>> filterExpression);
         void DeleteMany(Expression<Func<TDocument, bool>> filterExpression);
+        Task GetByIdAsync(string id);
     }
 }

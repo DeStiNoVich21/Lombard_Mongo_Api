@@ -12,11 +12,10 @@ namespace Lombard_Mongo_Api.Models.Dtos
 {
     public class addLombardDto
     {
-        [BsonElement("address")]
-        public string? Address { get; set; } = string.Empty;
-        [BsonElement("number")]
-        public string? Number { get; set; } = string.Empty;
-        [BsonElement("description")]
-        public string? Description { get; set; } = string.Empty;
+        public string Id { get; set; }
+        public string name { get; set; } = string.Empty;
+        public string address { get; set; } = string.Empty;
+        public string number { get; set; } = string.Empty;
+        public string description { get; set; } = string.Empty;
     }
 }
