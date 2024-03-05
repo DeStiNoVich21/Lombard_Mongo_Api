@@ -14,6 +14,7 @@ using System.Security.Claims;
 using System.Text;
 using MongoDB.Driver;
 using System.Text;
+using Lombard_Mongo_Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 SymmetricSecurityKey GetSymmetricSecurityKey() =>
@@ -54,7 +55,9 @@ builder.Services.Configure<MongoSettings>(
 
 builder.Services.AddSingleton<IMongoSettings>(provider =>
     provider.GetRequiredService<IOptions<MongoSettings>>().Value);
+builder.Services.AddHttpContextAccessor();
 
+builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped(typeof(IMongoRepository<>), typeof(MongoRepository<>));
 builder.Services.AddSwaggerGen(c =>
 {

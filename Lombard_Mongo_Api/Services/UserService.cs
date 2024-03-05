@@ -10,23 +10,23 @@ namespace Lombard_Mongo_Api.Services
 {
     public class UserService : IUserService
     {
-    
+
         private readonly IConfiguration _configuration;
         private readonly IHttpContextAccessor _httpContextAccessor;
-        public UserService( IConfiguration configuration, IHttpContextAccessor httpContextAccessor)
+        public UserService(IConfiguration configuration, IHttpContextAccessor httpContextAccessor)
         {
-       
+
             _configuration = configuration;
             _httpContextAccessor = httpContextAccessor;
         }
 
-        public async Task<string> CreateToken(Users user)
+        public Task<string> CreateToken(Users user)
         {
-            List<Claim> claims =
-                        [
-                            new Claim(ClaimTypes.Email, user.email),
-                            new Claim(ClaimTypes.Role, user.role)
-                        ];
+            List<Claim> claims = new List<Claim>
+    {
+        new Claim(ClaimTypes.NameIdentifier, user.Id),
+        new Claim(ClaimTypes.Role, user.role)
+    };
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
                 _configuration.GetSection("AppSettings:Token").Value));
@@ -40,7 +40,7 @@ namespace Lombard_Mongo_Api.Services
 
             var jwt = new JwtSecurityTokenHandler().WriteToken(token);
 
-            return jwt;
+            return Task.FromResult(jwt);
         }
 
         public Task<string> RefreshToken(string token)

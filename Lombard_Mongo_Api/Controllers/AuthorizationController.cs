@@ -1,8 +1,12 @@
-﻿using DnsClient;
+﻿using Amazon.Runtime.Internal;
+using DnsClient;
 using Lombard_Mongo_Api.Models;
 using Lombard_Mongo_Api.Models.Dtos;
 using Lombard_Mongo_Api.MongoRepository.GenericRepository;
+using Lombard_Mongo_Api.Services;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
@@ -21,10 +25,12 @@ namespace Lombard_Mongo_Api.Controllers
     {
         private readonly IMongoRepository<Users> _dbRepository;
         private readonly IConfiguration _configuration;
-        public AuthorizationController(IMongoRepository<Users> dbRepository, IConfiguration configuration)
+        private readonly IUserService _userService;
+        public AuthorizationController(IMongoRepository<Users> dbRepository, IConfiguration configuration, IUserService userRepository)
         {
             _dbRepository = dbRepository;
             _configuration = configuration;
+            _userService = userRepository;
         }
         [HttpPost("Login")]
         public ActionResult Get(LoginDto login)
@@ -32,17 +38,19 @@ namespace Lombard_Mongo_Api.Controllers
             try
             {
                 // Подготовьте лямбда-выражение для фильтрации
-                Expression<Func<Users, bool>> filterExpression = u => u.username == login.username && u.password == login.password;
+                Expression<Func<Users, bool>> filterExpression = u => u.username == login.username;
+
                 // Вызовите метод FindOne с этим фильтром
                 var user = _dbRepository.FindOne(filterExpression);
                 // Если пользователь найден, верните его
-                if (user != null)
+                if (user != null || !_userService.VerifyPasswordHash(login.password, user.PasswordHash, user.PasswordSalt))
                 {
-                    List<Claim> claims =
-                        [
-                            new Claim(ClaimTypes.UserData, user.Id.ToString()),
+                    var claims = new List<Claim>
+                    {                             new Claim(ClaimTypes.UserData, user.Id.ToString()),
                             new Claim(ClaimTypes.Role, user.role)
-                        ];
+                    };
+
+
                     SymmetricSecurityKey GetSymmetricSecurityKey() =>
                     new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtSettings:Key"]));
                     // создаем JWT-токен
@@ -50,14 +58,16 @@ namespace Lombard_Mongo_Api.Controllers
                             issuer: _configuration["JwtSettings:Issuer"],
                             audience: _configuration["JwtSettings:Audience"],
                             claims: claims,
-                            expires: DateTime.UtcNow.Add(TimeSpan.FromHours(24)),
+                            expires: DateTime.UtcNow.Add(TimeSpan.FromHours(3)),
                             signingCredentials: new SigningCredentials(GetSymmetricSecurityKey(), SecurityAlgorithms.HmacSha256)); ; ;
                     var encodedJwt = new JwtSecurityTokenHandler().WriteToken(jwt);
                     var response = new
                     {
-                        access_token = encodedJwt,
+                        encodedJwt = encodedJwt,
                     };
+
                     return Ok(response);
+
                 }
                 else
                 {
@@ -76,18 +86,21 @@ namespace Lombard_Mongo_Api.Controllers
             try
             {
                 // Подготовьте лямбда-выражение для фильтрации
-                Expression<Func<Users, bool>> filterExpression = u => u.username == obj.username ;
+                Expression<Func<Users, bool>> filterExpression = u => u.username == obj.username;
                 // Вызовите метод FindOne с этим фильтром
                 var user = _dbRepository.FindOne(filterExpression);
-                if(user != null)
+                if (user != null)
                 {
                     return BadRequest("This username already exist, please choose another one");
                 }
+                _userService.CreatePasswordHash(obj.password, out byte[] passwordHash, out byte[] passwordSalt);
+
                 var users = new Users
                 {
                     Id = "",
                     username = obj.username,
-                    password = obj.password,
+                    PasswordHash = passwordHash,
+                    PasswordSalt = passwordSalt,
                     role = "User",
                     email = obj.email,
                     number = obj.number,

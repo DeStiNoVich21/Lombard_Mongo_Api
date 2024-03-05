@@ -20,8 +20,12 @@ namespace Lombard_Mongo_Api.Models
         [BsonElement("username")]
         public string username { get; set; } = string.Empty;
 
-        [BsonElement("password")]
-        public string password { get; set; } = string.Empty;
+
+        [BsonElement("passwordhash")]
+        public byte[] PasswordHash { get; set; }
+
+        [BsonElement("passwordsalt")]
+        public byte[] PasswordSalt { get; set; }
 
         [BsonElement("role")]
         public string role { get; set; } = "User";
