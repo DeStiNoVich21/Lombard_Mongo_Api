@@ -17,7 +17,6 @@ namespace Lombard_Mongo_Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-
     public class AuthorizationController : Controller
     {
         private readonly IMongoRepository<Users> _dbRepository;
@@ -27,7 +26,6 @@ namespace Lombard_Mongo_Api.Controllers
             _dbRepository = dbRepository;
             _configuration = configuration;
         }
-
         [HttpPost("Login")]
         public ActionResult Get(LoginDto login)
         {
@@ -35,10 +33,8 @@ namespace Lombard_Mongo_Api.Controllers
             {
                 // Подготовьте лямбда-выражение для фильтрации
                 Expression<Func<Users, bool>> filterExpression = u => u.username == login.username && u.password == login.password;
-
                 // Вызовите метод FindOne с этим фильтром
                 var user = _dbRepository.FindOne(filterExpression);
-
                 // Если пользователь найден, верните его
                 if (user != null)
                 {
@@ -47,7 +43,6 @@ namespace Lombard_Mongo_Api.Controllers
                             new Claim(ClaimTypes.UserData, user.Id.ToString()),
                             new Claim(ClaimTypes.Role, user.role)
                         ];
-
                     SymmetricSecurityKey GetSymmetricSecurityKey() =>
                     new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtSettings:Key"]));
                     // создаем JWT-токен
@@ -58,14 +53,11 @@ namespace Lombard_Mongo_Api.Controllers
                             expires: DateTime.UtcNow.Add(TimeSpan.FromHours(24)),
                             signingCredentials: new SigningCredentials(GetSymmetricSecurityKey(), SecurityAlgorithms.HmacSha256)); ; ;
                     var encodedJwt = new JwtSecurityTokenHandler().WriteToken(jwt);
-
                     var response = new
                     {
                         access_token = encodedJwt,
                     };
-
                     return Ok(response);
-
                 }
                 else
                 {

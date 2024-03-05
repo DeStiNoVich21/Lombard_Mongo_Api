@@ -10,11 +10,13 @@ using Lombard_Mongo_Api.MongoRepository.GenericRepository;
 
 namespace Lombard_Mongo_Api.Models.Dtos
 {
-    public class LoginDto
+    public class addLombardDto
     {
-        [BsonElement("username")]
-        public string username { get; set; } = string.Empty;
-        [BsonElement("password")]
-        public string password { get; set; } = string.Empty;
+        [BsonElement("address")]
+        public string? Address { get; set; } = string.Empty;
+        [BsonElement("number")]
+        public string? Number { get; set; } = string.Empty;
+        [BsonElement("description")]
+        public string? Description { get; set; } = string.Empty;
     }
 }
