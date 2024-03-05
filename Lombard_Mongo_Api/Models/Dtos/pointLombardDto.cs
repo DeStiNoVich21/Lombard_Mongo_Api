@@ -7,10 +7,9 @@ using MongoDB.Bson.Serialization.Attributes;
 using Microsoft.AspNetCore.Components.Web;
 using System.Reflection.Metadata;
 using Lombard_Mongo_Api.MongoRepository.GenericRepository;
-
 namespace Lombard_Mongo_Api.Models.Dtos
 {
-    public class addLombardDto
+    public class pointLombardDto
     {
         public string Id { get; set; }
         public string name { get; set; } = string.Empty;

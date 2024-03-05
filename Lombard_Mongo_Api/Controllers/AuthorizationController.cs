@@ -12,7 +12,7 @@ using System.Linq.Expressions;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
-
+using System.Security.Cryptography;
 namespace Lombard_Mongo_Api.Controllers
 {
     [Route("api/[controller]")]
@@ -75,17 +75,14 @@ namespace Lombard_Mongo_Api.Controllers
         {
             try
             {
-
                 // Подготовьте лямбда-выражение для фильтрации
                 Expression<Func<Users, bool>> filterExpression = u => u.username == obj.username ;
-
                 // Вызовите метод FindOne с этим фильтром
                 var user = _dbRepository.FindOne(filterExpression);
                 if(user != null)
                 {
                     return BadRequest("This username already exist, please choose another one");
                 }
-
                 var users = new Users
                 {
                     Id = "",
@@ -97,7 +94,6 @@ namespace Lombard_Mongo_Api.Controllers
                     _idLombard = null
                 };
                 _dbRepository.InsertOne(users);
-
                 return Ok();
             }
             catch (Exception ex)
