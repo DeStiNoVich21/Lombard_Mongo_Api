@@ -4,7 +4,7 @@ using Lombard_Mongo_Api.MongoRepository.GenericRepository;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-
+using System.Linq;
 namespace Lombard_Mongo_Api.Controllers
 {
     [Route("api/[controller]")]
@@ -50,6 +50,29 @@ namespace Lombard_Mongo_Api.Controllers
                 return StatusCode(500, $"エラーが発生しました: {ex.Message}");
             }
         }
+        /*[HttpGet("categories")]
+        public async Task<IActionResult> GetCategories()
+        {
+            try
+            {
+                if (!User.Identity.IsAuthenticated)
+                {
+                    return Unauthorized("ユーザーが認証されていません");
+                }
 
+                var categories = await _dbRepository
+                    .Select(p => p.Category)
+                    .Distinct()
+                    .ToListAsync();
+
+                _logger.LogInformation($"カテゴリのリストが取得されました");
+                return Ok(categories);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "カテゴリのリストを取得中にエラーが発生しました");
+                return StatusCode(500, $"内部サーバーエラー: {ex.Message}");
+            }
+        }*/
     }
 }
