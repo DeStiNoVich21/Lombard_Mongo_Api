@@ -1,10 +1,7 @@
-﻿using Microsoft.VisualBasic;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Text.Json.Serialization;
-using MongoDB.Bson;
+﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using Microsoft.AspNetCore.Components.Web;
+
 using Lombard_Mongo_Api.MongoRepository.GenericRepository;
 namespace Lombard_Mongo_Api.Models
 {
@@ -12,6 +9,7 @@ namespace Lombard_Mongo_Api.Models
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
+        public string _id { get; set; } = string.Empty;
         public string Id { get; set; } = string.Empty;
         [BsonElement("name")]
         public string name { get; set; } = string.Empty;
@@ -22,7 +20,7 @@ namespace Lombard_Mongo_Api.Models
         [BsonElement("description")]
         public string description { get; set; } = string.Empty;
         [BsonElement("price")]
-        public int price {  get; set; }
+        public int price { get; set; }
         [BsonElement("status")]
         public string status { get; set; } = string.Empty;
         [BsonElement("isdeleted")]
