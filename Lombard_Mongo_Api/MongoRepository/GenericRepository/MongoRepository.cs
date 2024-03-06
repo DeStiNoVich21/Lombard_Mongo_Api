@@ -52,7 +52,7 @@ namespace Lombard_Mongo_Api.MongoRepository.GenericRepository
             }
         }
 
-        public void InsertOne(TDocument document)
+        public async void InsertOne(TDocument document)
         {
 
             try
@@ -66,7 +66,7 @@ namespace Lombard_Mongo_Api.MongoRepository.GenericRepository
             }
         }
 
-        public void InsertMany(ICollection<TDocument> documents)
+        public async void InsertMany(ICollection<TDocument> documents)
         {
             try
             {
@@ -79,12 +79,12 @@ namespace Lombard_Mongo_Api.MongoRepository.GenericRepository
             }
         }
 
-        public TDocument FindById(string id)
+        public async  Task<TDocument> FindById(string id)
         {
             try
             {
                 var filter = Builders<TDocument>.Filter.Eq(doc => doc.Id, id);
-                return _collection.Find(filter).FirstOrDefault();
+                return await _collection.Find(filter).FirstOrDefaultAsync();
             }
             catch (Exception)
             {
@@ -93,11 +93,11 @@ namespace Lombard_Mongo_Api.MongoRepository.GenericRepository
             }
         }
 
-        public TDocument FindOne(Expression<Func<TDocument, bool>> filterExpression)
+        public async Task<TDocument>  FindOne(Expression<Func<TDocument, bool>> filterExpression)
         {
             try
             {
-                return _collection.Find(filterExpression).FirstOrDefault();
+                return await _collection.Find(filterExpression).FirstOrDefaultAsync();
             }
             catch (Exception)
             {
@@ -120,7 +120,7 @@ namespace Lombard_Mongo_Api.MongoRepository.GenericRepository
             }
         }
 
-        public void DeleteById(string id)
+        public async void DeleteById(string id)
         {
             try
             {
@@ -134,7 +134,7 @@ namespace Lombard_Mongo_Api.MongoRepository.GenericRepository
             }
         }
 
-        public void DeleteOne(Expression<Func<TDocument, bool>> filterExpression)
+        public async void DeleteOne(Expression<Func<TDocument, bool>> filterExpression)
         {
             try
             {
@@ -147,7 +147,7 @@ namespace Lombard_Mongo_Api.MongoRepository.GenericRepository
             }
         }
 
-        public void DeleteMany(Expression<Func<TDocument, bool>> filterExpression)
+        public async void DeleteMany(Expression<Func<TDocument, bool>> filterExpression)
         {
             try
             {
@@ -160,7 +160,7 @@ namespace Lombard_Mongo_Api.MongoRepository.GenericRepository
             }
         }
 
-        public Task GetByIdAsync(string id)
+        public  async Task GetByIdAsync(string id)
         {
             throw new NotImplementedException();
         }

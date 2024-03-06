@@ -33,7 +33,7 @@ namespace Lombard_Mongo_Api.Controllers
             _userService = userRepository;
         }
         [HttpPost("Login")]
-        public ActionResult Get(LoginDto login)
+        public async Task<ActionResult> Get(LoginDto login)
         {
             try
             {
@@ -41,7 +41,7 @@ namespace Lombard_Mongo_Api.Controllers
                 Expression<Func<Users, bool>> filterExpression = u => u.username == login.username;
 
                 // Вызовите метод FindOne с этим фильтром
-                var user = _dbRepository.FindOne(filterExpression);
+                var user = await _dbRepository.FindOne(filterExpression);
                 // Если пользователь найден, верните его
                 if (user != null || !_userService.VerifyPasswordHash(login.password, user.PasswordHash, user.PasswordSalt))
                 {
@@ -81,14 +81,14 @@ namespace Lombard_Mongo_Api.Controllers
         }
 
         [HttpPost("Registration")]
-        public IActionResult Post(UsersDto obj)
+        public async Task<ActionResult> Post(UsersDto obj)
         {
             try
             {
                 // Подготовьте лямбда-выражение для фильтрации
                 Expression<Func<Users, bool>> filterExpression = u => u.username == obj.username;
                 // Вызовите метод FindOne с этим фильтром
-                var user = _dbRepository.FindOne(filterExpression);
+                var user = await _dbRepository.FindOne(filterExpression);
                 if (user != null)
                 {
                     return BadRequest("This username already exist, please choose another one");
