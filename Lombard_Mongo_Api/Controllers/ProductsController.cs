@@ -12,12 +12,12 @@ namespace Lombard_Mongo_Api.Controllers
     [ApiController]
     [EnableCors("_myAllowSpecificOrigins")]
     [Authorize]
-    public class Fuji : ControllerBase
+    public class ProductsController : ControllerBase
     {
         private readonly IMongoRepository<Products> _dbRepository;
         private readonly IConfiguration _configuration;
-        private readonly ILogger<Fuji> _logger;
-        public Fuji(IConfiguration configuration, IMongoRepository<Products> dbRepository, ILogger<Fuji> logger)
+        private readonly ILogger<ProductsController> _logger;
+        public ProductsController(IConfiguration configuration, IMongoRepository<Products> dbRepository, ILogger<ProductsController> logger)
         {
             _configuration = configuration;
             _dbRepository = dbRepository;
@@ -30,7 +30,7 @@ namespace Lombard_Mongo_Api.Controllers
             {
                 if (!User.Identity.IsAuthenticated)
                 {
-                    return Unauthorized("ユーザーが認証されていません");
+                    return Unauthorized("User is not authenticated");
                 }
                 var product = new Products
                 {
@@ -43,13 +43,13 @@ namespace Lombard_Mongo_Api.Controllers
                     IsDeleted = productDto.IsDeleted
                 };
                 _dbRepository.InsertOne(product);
-                _logger.LogInformation($"製品が追加されました: {product.name}");
+                _logger.LogInformation($"Product has been added: {product.name}");
                 return Ok();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "製品の追加中にエラーが発生しました");
-                return StatusCode(500, $"エラーが発生しました: {ex.Message}");
+                _logger.LogError(ex, "An error occurred while adding the product");
+                return StatusCode(500, $"An error has occurred.: {ex.Message}");
             }
         }
         [HttpGet("products")]
