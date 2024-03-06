@@ -2,6 +2,7 @@
 using Lombard_Mongo_Api.Models.Dtos;
 using Lombard_Mongo_Api.MongoRepository.GenericRepository;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,6 +10,7 @@ namespace Lombard_Mongo_Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [EnableCors("_myAllowSpecificOrigins")]
     [Authorize]
     public class Fuji : ControllerBase
     {
