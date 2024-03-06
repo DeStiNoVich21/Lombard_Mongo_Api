@@ -12,7 +12,7 @@ namespace Lombard_Mongo_Api.Controllers
     [Route("api/[controller]")]
     [ApiController]
     //[Authorize(Roles = "admin")] 
-    [Authorize] 
+    [Authorize]
     public class LombardController : ControllerBase
     {
         private readonly IMongoRepository<Lombards> _dbRepository;
