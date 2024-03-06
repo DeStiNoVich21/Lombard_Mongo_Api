@@ -52,8 +52,8 @@ namespace Lombard_Mongo_Api.Controllers
                 return StatusCode(500, $"エラーが発生しました: {ex.Message}");
             }
         }
-        /*[HttpGet("categories")]
-        public async Task<IActionResult> GetCategories()
+        [HttpGet("products")]
+        public async Task<ActionResult<IEnumerable<Products>>> GetProducts()
         {
             try
             {
@@ -61,20 +61,38 @@ namespace Lombard_Mongo_Api.Controllers
                 {
                     return Unauthorized("ユーザーが認証されていません");
                 }
-
-                var categories = await _dbRepository
-                    .Select(p => p.Category)
-                    .Distinct()
-                    .ToListAsync();
-
-                _logger.LogInformation($"カテゴリのリストが取得されました");
-                return Ok(categories);
+                var products = _dbRepository.AsQueryable().ToList();
+                _logger.LogInformation($"製品のリストが取得されました");
+                return Ok(products);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "カテゴリのリストを取得中にエラーが発生しました");
+                _logger.LogError(ex, "製品のリストを取得中にエラーが発生しました");
                 return StatusCode(500, $"内部サーバーエラー: {ex.Message}");
             }
-        }*/
+        }
+        [HttpGet("product/{id}")]
+        public async Task<ActionResult<Products>> GetProductById(string id)
+        {
+            try
+            {
+                if (!User.Identity.IsAuthenticated)
+                {
+                    return Unauthorized("ユーザーが認証されていません");
+                }
+                var product = await _dbRepository.FindById(id);
+                if (product == null)
+                {
+                    return NotFound($"ID {id} не найден");
+                }
+                _logger.LogInformation($"Продукт с ID {id} был найден");
+                return Ok(product);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Ошибка при поиске продукта с ID {id}");
+                return StatusCode(500, $"Ошибка сервера: {ex.Message}");
+            }
+        }
     }
 }

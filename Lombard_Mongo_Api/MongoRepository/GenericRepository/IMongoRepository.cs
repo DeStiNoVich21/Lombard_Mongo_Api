@@ -1,5 +1,4 @@
 ﻿using System.Linq.Expressions;
-
 namespace Lombard_Mongo_Api.MongoRepository.GenericRepository
 {
     public interface IMongoRepository<TDocument> where TDocument : IDocument
