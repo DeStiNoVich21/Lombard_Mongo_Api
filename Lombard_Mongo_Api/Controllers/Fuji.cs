@@ -4,6 +4,7 @@ using Lombard_Mongo_Api.MongoRepository.GenericRepository;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
+using System.Text.RegularExpressions;
 namespace Lombard_Mongo_Api.Controllers
 {
     [Route("api/[controller]")]
@@ -120,14 +121,11 @@ namespace Lombard_Mongo_Api.Controllers
                 {
                     return Unauthorized("ユーザーが認証されていません");
                 }
-
-                var products = _dbRepository.AsQueryable().Where(p => p.category == category).ToList();
-
+                var products = _dbRepository.AsQueryable().Where(p => p.category.ToLower() == category.ToLower()).ToList();
                 if (products.Count == 0)
                 {
                     return NotFound($"No products found in category: {category}");
                 }
-
                 _logger.LogInformation($"Products in category {category} retrieved successfully");
                 return Ok(products);
             }
