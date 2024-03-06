@@ -3,21 +3,19 @@ using Lombard_Mongo_Api.Models.Dtos;
 using Lombard_Mongo_Api.MongoRepository.GenericRepository;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using System.Linq;
 namespace Lombard_Mongo_Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
     [EnableCors("_myAllowSpecificOrigins")]
     [Authorize]
-    public class ProductsController : ControllerBase
+    public class Fuji : ControllerBase
     {
         private readonly IMongoRepository<Products> _dbRepository;
         private readonly IConfiguration _configuration;
-        private readonly ILogger<ProductsController> _logger;
-        public ProductsController(IConfiguration configuration, IMongoRepository<Products> dbRepository, ILogger<ProductsController> logger)
+        private readonly ILogger<Fuji> _logger;
+        public Fuji(IConfiguration configuration, IMongoRepository<Products> dbRepository, ILogger<Fuji> logger)
         {
             _configuration = configuration;
             _dbRepository = dbRepository;
@@ -92,6 +90,25 @@ namespace Lombard_Mongo_Api.Controllers
             {
                 _logger.LogError(ex, $"Ошибка при поиске продукта с ID {id}");
                 return StatusCode(500, $"Ошибка сервера: {ex.Message}");
+            }
+        }
+        [HttpGet("categories")]
+        public async Task<ActionResult<IEnumerable<string>>> GetUniqueCategories()
+        {
+            try
+            {
+                if (!User.Identity.IsAuthenticated)
+                {
+                    return Unauthorized("User is not authenticated");
+                }
+                var uniqueCategories =  _dbRepository.AsQueryable().Select(p => p.category).Distinct().ToList();
+                _logger.LogInformation($"Unique categories retrieved");
+                return Ok(uniqueCategories);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error while retrieving unique categories");
+                return StatusCode(500, $"Server error: {ex.Message}");
             }
         }
     }

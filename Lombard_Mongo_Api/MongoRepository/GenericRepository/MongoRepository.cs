@@ -120,7 +120,6 @@ namespace Lombard_Mongo_Api.MongoRepository.GenericRepository
                 throw;
             }
         }
-
         public async void DeleteById(string id)
         {
             try
@@ -134,7 +133,6 @@ namespace Lombard_Mongo_Api.MongoRepository.GenericRepository
                 throw;
             }
         }
-
         public async void DeleteOne(Expression<Func<TDocument, bool>> filterExpression)
         {
             try
@@ -147,7 +145,6 @@ namespace Lombard_Mongo_Api.MongoRepository.GenericRepository
                 throw;
             }
         }
-
         public async void DeleteMany(Expression<Func<TDocument, bool>> filterExpression)
         {
             try
@@ -160,10 +157,22 @@ namespace Lombard_Mongo_Api.MongoRepository.GenericRepository
                 throw;
             }
         }
-
         public  async Task GetByIdAsync(string id)
         {
             throw new NotImplementedException();
+        }
+        public async Task<List<TDocument>> FindManyByAttributeAsync(string attributeName, object attributeValue)
+        {
+            try
+            {
+                var filter = Builders<TDocument>.Filter.Eq(attributeName, attributeValue);
+                var result = await _collection.Find(filter).ToListAsync();
+                return result;
+            }
+            catch (Exception)
+            {
+                throw;
+            }
         }
     }
 }
