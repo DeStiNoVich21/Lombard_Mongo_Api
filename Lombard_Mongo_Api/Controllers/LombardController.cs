@@ -33,7 +33,7 @@ namespace Lombard_Mongo_Api.Controllers
             {
                 if (!User.Identity.IsAuthenticated)
                 {
-                    return Unauthorized("ユーザーが認証されていません");
+                    return Unauthorized("User is not authenticated");
                 }
                 string lombardName = "LombNet." + addLombard.address;
                 Lombards lombard = new Lombards
@@ -44,13 +44,13 @@ namespace Lombard_Mongo_Api.Controllers
                     description = addLombard.description
                 };
                 _dbRepository.InsertOne(lombard);
-                _logger.LogInformation($"ロンバードが追加されました: {lombard.lombard_name}");
+                _logger.LogInformation($"Lombard has been added: {lombard.lombard_name}");
                 return Ok();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "ロンバードの追加中にエラーが発生しました");
-                return StatusCode(500, $"エラーが発生しました: {ex.Message}");
+                _logger.LogError(ex, "An error occurred while adding Lombard");
+                return StatusCode(500, $"An error has occurred: {ex.Message}");
             }
         }
         [HttpGet]
@@ -60,7 +60,7 @@ namespace Lombard_Mongo_Api.Controllers
             {
                 if (!User.Identity.IsAuthenticated)
                 {
-                    return Unauthorized("ユーザーが認証されていません");
+                    return Unauthorized("User is not authenticated");
                 }
                 var lombards = _dbRepository.AsQueryable().ToList();
                 var lombardDtos = new List<pointLombardDto>();
@@ -76,13 +76,14 @@ namespace Lombard_Mongo_Api.Controllers
                     };
                     lombardDtos.Add(lombardDto);
                 }
-                _logger.LogInformation($"ロンバードのリストが取得されました");
+                _logger.LogInformation($"Lombard's listing has been retrieved.");
                 return Ok(lombardDtos);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "ロンバードのリストを取得中にエラーが発生しました");
-                return StatusCode(500, $"内部サーバーエラー: {ex.Message}");
+            
+                _logger.LogError(ex, "An error occurred while adding Lombard");
+                return StatusCode(500, $"An error has occurred: {ex.Message}");
             }
         }
         [HttpGet("{id}")]
@@ -92,7 +93,7 @@ namespace Lombard_Mongo_Api.Controllers
             {
                 if (!User.Identity.IsAuthenticated)
                 {
-                    return Unauthorized("ユーザーが認証されていません");
+                    return Unauthorized("User is not authenticated");
                 }
                 Lombards lombard = await _dbRepository.FindById(id);
                 if (lombard == null)
@@ -107,13 +108,13 @@ namespace Lombard_Mongo_Api.Controllers
                     number = lombard.number,
                     description = lombard.description
                 };
-                _logger.LogInformation($"ロンバードが取得されました: {lombardDto.name}");
+                _logger.LogInformation($"Lombard Retrieved: {lombardDto.name}");
                 return Ok(lombardDto);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "IDでロンバードを取得中にエラーが発生しました");
-                return StatusCode(500, $"内部サーバーエラー: {ex.Message}");
+                _logger.LogError(ex, "An error occurred while adding Lombard");
+                return StatusCode(500, $"An error has occurred: {ex.Message}");
             }
         }
         [HttpDelete("{id}")]
@@ -123,7 +124,7 @@ namespace Lombard_Mongo_Api.Controllers
             {
                 if (!User.Identity.IsAuthenticated)
                 {
-                    return Unauthorized("ユーザーが認証されていません");
+                    return Unauthorized("User is not authenticated");
                 }
                 Lombards lombard = await _dbRepository.FindById(id);
                 if (lombard == null)
@@ -131,13 +132,13 @@ namespace Lombard_Mongo_Api.Controllers
                     return NotFound();
                 }
                 _dbRepository.DeleteById(id);
-                _logger.LogInformation($"ロンバードが削除されました: {id}");
+                _logger.LogInformation($"Lombard has been removed: {id}");
                 return NoContent();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "IDでロンバードを削除中にエラーが発生しました");
-                return StatusCode(500, $"内部サーバーエラー: {ex.Message}");
+                _logger.LogError(ex, "An error occurred while adding Lombard");
+                return StatusCode(500, $"An error has occurred: {ex.Message}");
             }
         }
     }
