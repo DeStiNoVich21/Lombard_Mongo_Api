@@ -25,7 +25,7 @@ namespace Lombard_Mongo_Api.Controllers
             _logger = logger;
         }
         [HttpPost("addLombard")]
-        public ActionResult AddLombard(pointLombardDto addLombard)
+        public async Task<ActionResult> AddLombard(pointLombardDto addLombard)
         {
             try
             {
@@ -52,7 +52,7 @@ namespace Lombard_Mongo_Api.Controllers
             }
         }
         [HttpGet]
-        public IActionResult GetAllLombards()
+        public async Task<IActionResult> GetAllLombards()
         {
             try
             {
@@ -84,7 +84,7 @@ namespace Lombard_Mongo_Api.Controllers
             }
         }
         [HttpGet("{id}")]
-        public IActionResult GetLombardById(string id)
+        public async Task<IActionResult> GetLombardById(string id)
         {
             try
             {
@@ -92,7 +92,7 @@ namespace Lombard_Mongo_Api.Controllers
                 {
                     return Unauthorized("ユーザーが認証されていません");
                 }
-                Lombards lombard = _dbRepository.FindById(id);
+                Lombards lombard = await _dbRepository.FindById(id);
                 if (lombard == null)
                 {
                     return NotFound();
@@ -115,7 +115,7 @@ namespace Lombard_Mongo_Api.Controllers
             }
         }
         [HttpDelete("{id}")]
-        public IActionResult DeleteLombardById(string id)
+        public async Task<IActionResult> DeleteLombardById(string id)
         {
             try
             {
@@ -123,7 +123,7 @@ namespace Lombard_Mongo_Api.Controllers
                 {
                     return Unauthorized("ユーザーが認証されていません");
                 }
-                Lombards lombard = _dbRepository.FindById(id);
+                Lombards lombard = await _dbRepository.FindById(id);
                 if (lombard == null)
                 {
                     return NotFound();
