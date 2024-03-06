@@ -111,5 +111,31 @@ namespace Lombard_Mongo_Api.Controllers
                 return StatusCode(500, $"Server error: {ex.Message}");
             }
         }
+        [HttpGet("products/category/{category}")]
+        public async Task<ActionResult<IEnumerable<Products>>> GetProductsByCategory(string category)
+        {
+            try
+            {
+                if (!User.Identity.IsAuthenticated)
+                {
+                    return Unauthorized("ユーザーが認証されていません");
+                }
+
+                var products = _dbRepository.AsQueryable().Where(p => p.category == category).ToList();
+
+                if (products.Count == 0)
+                {
+                    return NotFound($"No products found in category: {category}");
+                }
+
+                _logger.LogInformation($"Products in category {category} retrieved successfully");
+                return Ok(products);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error while retrieving products in category {category}");
+                return StatusCode(500, $"Server error: {ex.Message}");
+            }
+        }
     }
 }

@@ -84,7 +84,6 @@ namespace Lombard_Mongo_Api.Controllers
                 return BadRequest(ex.Message);
             }
         }
-
         [HttpPost("Registration")]
         public async Task<ActionResult> Post(UsersDto obj)
         {
