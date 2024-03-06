@@ -41,40 +41,43 @@ namespace Lombard_Mongo_Api.Controllers
             {
                 // Подготовьте лямбда-выражение для фильтрации
                 Expression<Func<Users, bool>> filterExpression = u => u.username == login.username;
-
                 // Вызовите метод FindOne с этим фильтром
                 var user = await _dbRepository.FindOne(filterExpression);
-                // Если пользователь найден, верните его
-                if (user != null || !_userService.VerifyPasswordHash(login.password, user.PasswordHash, user.PasswordSalt))
-                {
-                    var claims = new List<Claim>
-                    {                             new Claim(ClaimTypes.UserData, user.Id.ToString()),
-                            new Claim(ClaimTypes.Role, user.role)
-                    };
-
-
-                    SymmetricSecurityKey GetSymmetricSecurityKey() =>
-                    new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtSettings:Key"]));
-                    // создаем JWT-токен
-                    var jwt = new JwtSecurityToken(
-                            issuer: _configuration["JwtSettings:Issuer"],
-                            audience: _configuration["JwtSettings:Audience"],
-                            claims: claims,
-                            expires: DateTime.UtcNow.Add(TimeSpan.FromHours(3)),
-                            signingCredentials: new SigningCredentials(GetSymmetricSecurityKey(), SecurityAlgorithms.HmacSha256)); ; ;
-                    var encodedJwt = new JwtSecurityTokenHandler().WriteToken(jwt);
-                    var response = new
-                    {
-                        encodedJwt = encodedJwt,
-                    };
-
-                    return Ok(response);
-
-                }
-                else
+                // Если пользователь не найден, верните сообщение об ошибке
+                if (user == null)
                 {
                     return NotFound("User not found");
                 }
+                // Проверяем пароль
+                if (!_userService.VerifyPasswordHash(login.password, user.PasswordHash, user.PasswordSalt))
+                {
+                    return Unauthorized("Invalid password");
+                }
+
+                var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.UserData, user.Id.ToString()),
+            new Claim(ClaimTypes.Role, user.role)
+        };
+
+                SymmetricSecurityKey GetSymmetricSecurityKey() =>
+                    new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtSettings:Key"]));
+
+                // Создаем JWT-токен
+                var jwt = new JwtSecurityToken(
+                    issuer: _configuration["JwtSettings:Issuer"],
+                    audience: _configuration["JwtSettings:Audience"],
+                    claims: claims,
+                    expires: DateTime.UtcNow.Add(TimeSpan.FromHours(3)),
+                    signingCredentials: new SigningCredentials(GetSymmetricSecurityKey(), SecurityAlgorithms.HmacSha256));
+
+                var encodedJwt = new JwtSecurityTokenHandler().WriteToken(jwt);
+                var response = new
+                {
+                    encodedJwt = encodedJwt,
+                };
+
+                return Ok(response);
             }
             catch (Exception ex)
             {
