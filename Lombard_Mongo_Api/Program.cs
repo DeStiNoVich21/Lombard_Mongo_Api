@@ -27,9 +27,9 @@ builder.Services.AddCors(options =>
     options.AddPolicy(name: MyAllowSpecificOrigins,
                       policy =>
                       {
-                          policy.WithOrigins("127.0.0.1:5173",
-                                              "127.0.0.1:5173",
-                                              "https://r941rsd2-7211.euw.devtunnels.ms/")
+                          policy.WithOrigins("http://127.0.0.1:5173",
+                                             "http://127.0.0.1:7211",
+                                              "https://r941rsd2-7211.euw.devtunnels.ms:7211/")
                                                 .AllowAnyHeader()
                                                   .AllowAnyMethod();
                       });
