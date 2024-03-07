@@ -13,6 +13,7 @@ namespace Lombard_Mongo_Api.Models.Dtos
     {
         [BsonElement("username")]
         public string username { get; set; } = string.Empty;
+
         [BsonElement("password")]
         public string password { get; set; } = string.Empty;
     }

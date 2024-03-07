@@ -13,12 +13,16 @@ namespace Lombard_Mongo_Api.Models
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
         public string Id { get; set; }
+
         [BsonElement("name")]
         public string lombard_name { get; set; } = "LombNet";
+
         [BsonElement("address")]
         public string? address { get; set; } = string.Empty;
+
         [BsonElement("number")]
         public string? number { get; set; } = string.Empty;
+
         [BsonElement("description")]
         public string? description { get; set; } = string.Empty;
     }
