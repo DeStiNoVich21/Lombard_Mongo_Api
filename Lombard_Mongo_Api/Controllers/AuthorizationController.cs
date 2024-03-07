@@ -28,14 +28,12 @@ namespace Lombard_Mongo_Api.Controllers
         private readonly IMongoRepository<Users> _dbRepository;
         private readonly IConfiguration _configuration;
         private readonly IUserService _userService;
-
         public AuthorizationController(IMongoRepository<Users> dbRepository, IConfiguration configuration, IUserService userRepository)
         {
             _dbRepository = dbRepository;
             _configuration = configuration;
             _userService = userRepository;
         }
-
         [HttpPost("Login")]
         public async Task<ActionResult> Get(LoginDto login)
         {
@@ -86,7 +84,6 @@ namespace Lombard_Mongo_Api.Controllers
                 return BadRequest(ex.Message);
             }
         }
-
         [HttpPost("Registration")]
         public async Task<ActionResult> Post(UsersDto obj)
         {

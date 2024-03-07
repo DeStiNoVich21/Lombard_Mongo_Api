@@ -47,7 +47,7 @@ namespace Lombard_Mongo_Api.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "sdfghjkl;sxdfghjkl;dfghjk");
+                _logger.LogError(ex, "An error occurred while adding the product");
                 return StatusCode(500, $"An error has occurred.: {ex.Message}");
             }
         }
@@ -60,7 +60,7 @@ namespace Lombard_Mongo_Api.Controllers
                 {
                     return Unauthorized("ユーザーが認証されていません");
                 }
-                var products = _dbRepository.AsQueryable().ToList();
+                var products = _dbRepository.AsQueryable().Where(p => !p.IsDeleted).ToList();
                 _logger.LogInformation($"製品のリストが取得されました");
                 return Ok(products);
             }
@@ -121,7 +121,7 @@ namespace Lombard_Mongo_Api.Controllers
                 {
                     return Unauthorized("ユーザーが認証されていません");
                 }
-                var products = _dbRepository.AsQueryable().Where(p => p.category.ToLower() == category.ToLower()).ToList();
+                var products = _dbRepository.AsQueryable().Where(p => p.category.ToLower() == category.ToLower() && !p.IsDeleted).ToList();
                 if (products.Count == 0)
                 {
                     return NotFound($"No products found in category: {category}");
