@@ -135,5 +135,29 @@ namespace Lombard_Mongo_Api.Controllers
                 return StatusCode(500, $"Server error: {ex.Message}");
             }
         }
+        [HttpDelete("product/{id}")]
+        public async Task<ActionResult> DeleteProductById(string id)
+        {
+            try
+            {
+                if (!User.Identity.IsAuthenticated)
+                {
+                    return Unauthorized("ユーザーが認証されていません");
+                }
+                var product = await _dbRepository.FindById(id);
+                if (product == null)
+                {
+                    return NotFound($"Product with ID {id} not found");
+                }
+                _dbRepository.DeleteById(id);
+                _logger.LogInformation($"Product with ID {id} has been deleted successfully");
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error while deleting product with ID {id}");
+                return StatusCode(500, $"Server error: {ex.Message}");
+            }
+        }
     }
 }
