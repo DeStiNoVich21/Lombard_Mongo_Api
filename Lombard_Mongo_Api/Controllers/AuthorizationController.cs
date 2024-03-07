@@ -55,10 +55,10 @@ namespace Lombard_Mongo_Api.Controllers
                 }
 
                 var claims = new List<Claim>
-        {
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.Role, user.role)
-        };
+                {
+                      new Claim("UserId", user.Id.ToString()),
+                      new Claim("UserRole", user.role)
+                };
 
                 SymmetricSecurityKey GetSymmetricSecurityKey() =>
                     new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtSettings:Key"]));

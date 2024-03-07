@@ -21,12 +21,13 @@ namespace Lombard_Mongo_Api.Controllers
     public class TransactionHistoryController : Controller
     {
         private readonly IMongoRepository<TransactionHistory> _dbRepository;
+        private readonly IMongoRepository<Products> _productsRepository;
         private readonly IHttpContextAccessor _contextAccessor;
-        public TransactionHistoryController(IMongoRepository<TransactionHistory> dbRepository,IHttpContextAccessor httpContextAccessor)
+        public TransactionHistoryController(IMongoRepository<TransactionHistory> dbRepository,IHttpContextAccessor httpContextAccessor,IMongoRepository<Products> products)
         {
             _dbRepository = dbRepository;
             _contextAccessor = httpContextAccessor;
-
+            _productsRepository = products;
         }
 
         [HttpGet("GetTransactionsList")]
@@ -54,16 +55,26 @@ namespace Lombard_Mongo_Api.Controllers
             {
 
                 var user = _contextAccessor.HttpContext.User;
-                var userId = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
-                var transaction = new TransactionHistory
+                var userId = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Name);
+
+                var productcheck = _productsRepository.FindById(obj._idProduct.ToString()) ;
+
+                if (productcheck != null)
                 {
-                    Id = "",
-                    _idUser = userId.ToString(),
-                    _idProduct = obj._idProduct,
-                    status = obj.status
-                };
-                _dbRepository.InsertOne(transaction);
-                return Ok();
+                    var transaction = new TransactionHistory
+                    {
+                        Id = "",
+                        _idUser = userId.ToString(),
+                        _idProduct = obj._idProduct.ToString(),
+                        status = obj.status
+                    };
+                    _dbRepository.InsertOne(transaction);
+                    return Ok();
+                }
+                else
+                {
+                    return NotFound("Such product does not exist");
+                }
             }
             catch (Exception ex)
             {
