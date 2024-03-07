@@ -5,16 +5,13 @@ using System.Text.Json.Serialization;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using Microsoft.AspNetCore.Components.Web;
+using System.Reflection.Metadata;
 using Lombard_Mongo_Api.MongoRepository.GenericRepository;
 
-namespace Lombard_Mongo_Api.Models
+namespace Lombard_Mongo_Api.Models.Dtos
 {
-    public class TransactionHistory : IDocument
+    public class TransactionDto
     {
-        [BsonId]
-        [BsonRepresentation(BsonType.ObjectId)]
-
-        public string Id { get; set; } = string.Empty;
 
         [BsonElement("_idUser")]
         public string _idUser { get; set; } = string.Empty;
@@ -23,6 +20,7 @@ namespace Lombard_Mongo_Api.Models
         public string _idProduct { get; set; } = string.Empty;
 
         [BsonElement("Status")]
-        public string status {  get; set; } = string.Empty;
+        public string status { get; set; } = string.Empty;
+
     }
 }
