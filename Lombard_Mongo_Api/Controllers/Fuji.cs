@@ -159,5 +159,34 @@ namespace Lombard_Mongo_Api.Controllers
                 return StatusCode(500, $"Server error: {ex.Message}");
             }
         }
+        [HttpPatch("product/{id}/isdeleted")]
+        public async Task<ActionResult> UpdateIsDeleted(string id, [FromBody] string isDeleted)
+        {
+            try
+            {
+                if (!User.Identity.IsAuthenticated)
+                {
+                    return Unauthorized("ユーザーが認証されていません");
+                }
+                if (!bool.TryParse(isDeleted, out bool isDeletedValue))
+                {
+                    return BadRequest("Неверное значение для поля IsDeleted. Значение должно быть true или false.");
+                }
+                var product = await _dbRepository.FindById(id);
+                if (product == null)
+                {
+                    return NotFound($"Product with ID {id} not found");
+                }
+                product.IsDeleted = isDeletedValue;
+                _dbRepository.ReplaceOne(product);
+                _logger.LogInformation($"IsDeleted value for product with ID {id} has been updated to {isDeletedValue}");
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error while updating IsDeleted value for product with ID {id}");
+                return StatusCode(500, $"Server error: {ex.Message}");
+            }
+        }
     }
 }
