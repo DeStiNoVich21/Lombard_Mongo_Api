@@ -47,7 +47,7 @@ namespace Lombard_Mongo_Api.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "An error occurred while adding the product");
+                _logger.LogError(ex, "sdfghjkl;sxdfghjkl;dfghjk");
                 return StatusCode(500, $"An error has occurred.: {ex.Message}");
             }
         }
