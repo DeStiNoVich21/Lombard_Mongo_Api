@@ -4,6 +4,9 @@ using Lombard_Mongo_Api.MongoRepository.GenericRepository;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
+using MongoDB.Bson;
+using MongoDB.Driver;
+using System.Linq.Expressions;
 using System.Text.RegularExpressions;
 namespace Lombard_Mongo_Api.Controllers
 {
@@ -188,5 +191,63 @@ namespace Lombard_Mongo_Api.Controllers
                 return StatusCode(500, $"Server error: {ex.Message}");
             }
         }
+        [HttpGet("deletedProducts")]
+        public async Task<ActionResult<IEnumerable<Products>>> GetDeletedProducts()
+        {
+            try
+            {
+                if (!User.Identity.IsAuthenticated)
+                {
+                    return Unauthorized("User is not authenticated");
+                }
+                var deletedProducts = _dbRepository.AsQueryable().Where(p => p.IsDeleted).ToList();
+                _logger.LogInformation($"Deleted products retrieved successfully");
+                return Ok(deletedProducts);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while retrieving deleted products");
+                return StatusCode(500, $"Server error: {ex.Message}");
+            }
+        }
+        [HttpGet("search")]
+        public async Task<ActionResult<List<Products>>> SearchProductsByKeywords([FromQuery] string keywords)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(keywords))
+                {
+                    return BadRequest("Keywords cannot be empty");
+                }
+                // Разбиваем ключевые слова по запятым
+                var keywordsList = keywords.Split(',').Select(k => k.Trim()).ToList();
+                // Формируем фильтр для поиска по всем полям
+                var filter = Builders<Products>.Filter.Or(
+                    keywordsList.Select(keyword =>
+                        Builders<Products>.Filter.Where(p =>
+                            p.name.Contains(keyword) || // Ищем в имени
+                            p.category.Contains(keyword) || // Ищем в категории
+                            p.description.Contains(keyword) || // Ищем в описании
+                            p.price.ToString().Contains(keyword) || // Ищем в цене
+                            p.status.Contains(keyword) // Ищем в статусе
+                        )
+                    )
+                );
+                var products = await _dbRepository.FindAsync(filter);
+                if (products.Count == 0)
+                {
+                    _logger.LogInformation($"No products found with keywords: {string.Join(", ", keywordsList)}");
+                    return NotFound();
+                }
+                _logger.LogInformation($"Products containing keywords '{string.Join(", ", keywordsList)}' retrieved successfully");
+                return Ok(products);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error while searching products with keywords '{keywords}'");
+                return StatusCode(500, $"Server error: {ex.Message}");
+            }
+        }
+
     }
 }

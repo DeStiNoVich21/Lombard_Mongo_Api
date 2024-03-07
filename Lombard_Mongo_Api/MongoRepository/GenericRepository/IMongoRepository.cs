@@ -1,4 +1,5 @@
-﻿using System.Linq.Expressions;
+﻿using MongoDB.Driver;
+using System.Linq.Expressions;
 namespace Lombard_Mongo_Api.MongoRepository.GenericRepository
 {
     public interface IMongoRepository<TDocument> where TDocument : IDocument
@@ -13,5 +14,6 @@ namespace Lombard_Mongo_Api.MongoRepository.GenericRepository
         void DeleteOne(Expression<Func<TDocument, bool>> filterExpression);
         void DeleteMany(Expression<Func<TDocument, bool>> filterExpression);
         Task GetByIdAsync(string id);
+        Task<List<TDocument>> FindAsync(FilterDefinition<TDocument> filter);
     }
 }

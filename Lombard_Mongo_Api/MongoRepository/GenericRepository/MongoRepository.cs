@@ -175,5 +175,16 @@ namespace Lombard_Mongo_Api.MongoRepository.GenericRepository
                 throw;
             }
         }
+        public async Task<List<TDocument>> FindAsync(FilterDefinition<TDocument> filter)
+        {
+            try
+            {
+                return await _collection.Find(filter).ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error while finding documents: {ex.Message}", ex);
+            }
+        }
     }
 }
