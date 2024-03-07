@@ -28,7 +28,8 @@ builder.Services.AddCors(options =>
                       policy =>
                       {
                           policy.WithOrigins("127.0.0.1:5173",
-                                              "127.0.0.1:5173")
+                                              "127.0.0.1:5173",
+                                              "https://r941rsd2-7211.euw.devtunnels.ms/")
                                                 .AllowAnyHeader()
                                                   .AllowAnyMethod();
                       });

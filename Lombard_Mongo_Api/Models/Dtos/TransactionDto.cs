@@ -13,8 +13,6 @@ namespace Lombard_Mongo_Api.Models.Dtos
     public class TransactionDto
     {
 
-        [BsonElement("_idUser")]
-        public string _idUser { get; set; } = string.Empty;
 
         [BsonElement("_idProduct")]
         public string _idProduct { get; set; } = string.Empty;
@@ -22,5 +20,15 @@ namespace Lombard_Mongo_Api.Models.Dtos
         [BsonElement("Status")]
         public string status { get; set; } = string.Empty;
 
+    }
+    public class TransactionUpdateDto
+    {
+        [BsonId]
+        [BsonRepresentation(BsonType.ObjectId)]
+
+        public string Id { get; set; }
+
+        [BsonElement("Status")]
+        public string status { get; set; } = string.Empty;
     }
 }

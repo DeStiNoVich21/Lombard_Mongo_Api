@@ -56,7 +56,7 @@ namespace Lombard_Mongo_Api.Controllers
 
                 var claims = new List<Claim>
         {
-            new Claim(ClaimTypes.UserData, user.Id.ToString()),
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(ClaimTypes.Role, user.role)
         };
 
