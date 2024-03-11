@@ -14,7 +14,6 @@ namespace Lombard_Mongo_Api.Controllers
     [Route("api/[controller]")]
     [ApiController]
     [EnableCors("_myAllowSpecificOrigins")]
-    [Authorize]
     public class Fuji : ControllerBase
     {
         private readonly IWebHostEnvironment _hostingEnvironment;
@@ -29,6 +28,7 @@ namespace Lombard_Mongo_Api.Controllers
             _hostingEnvironment = hostingEnvironment;
         }
         [HttpPost("addProduct")]
+        [Authorize]
         public async Task<ActionResult> AddProduct([FromForm] ProductsDto productDto, IFormFile image)
         {
             try
@@ -82,10 +82,6 @@ namespace Lombard_Mongo_Api.Controllers
         {
             try
             {
-                if (!User.Identity.IsAuthenticated)
-                {
-                    return Unauthorized("ユーザーが認証されていません");
-                }
                 var products = _dbRepository.AsQueryable().Where(p => !p.IsDeleted).ToList();
                 _logger.LogInformation($"製品のリストが取得されました");
                 return Ok(products);
@@ -102,10 +98,6 @@ namespace Lombard_Mongo_Api.Controllers
         {
             try
             {
-                if (!User.Identity.IsAuthenticated)
-                {
-                    return Unauthorized("ユーザーが認証されていません");
-                }
                 var product = await _dbRepository.FindById(id);
                 if (product == null)
                 {
@@ -126,10 +118,6 @@ namespace Lombard_Mongo_Api.Controllers
         {
             try
             {
-                if (!User.Identity.IsAuthenticated)
-                {
-                    return Unauthorized("User is not authenticated");
-                }
                 var uniqueCategories =  _dbRepository.AsQueryable().Select(p => p.category).Distinct().ToList();
                 _logger.LogInformation($"Unique categories retrieved");
                 return Ok(uniqueCategories);
@@ -146,10 +134,6 @@ namespace Lombard_Mongo_Api.Controllers
         {
             try
             {
-                if (!User.Identity.IsAuthenticated)
-                {
-                    return Unauthorized("ユーザーが認証されていません");
-                }
                 var products = _dbRepository.AsQueryable().Where(p => p.category.ToLower() == category.ToLower() && !p.IsDeleted).ToList();
                 if (products.Count == 0)
                 {
@@ -165,6 +149,7 @@ namespace Lombard_Mongo_Api.Controllers
             }
         }
         [HttpDelete("product/{id}")]
+        [Authorize]
         public async Task<ActionResult> DeleteProductById(string id)
         {
             try
@@ -189,6 +174,7 @@ namespace Lombard_Mongo_Api.Controllers
             }
         }
         [HttpPatch("product/{id}/isdeleted")]
+        [Authorize]
         public async Task<ActionResult> UpdateIsDeleted(string id, [FromBody] string isDeleted)
         {
             try
@@ -218,6 +204,7 @@ namespace Lombard_Mongo_Api.Controllers
             }
         }
         [HttpGet("deletedProducts")]
+        [Authorize]
         public async Task<ActionResult<IEnumerable<Products>>> GetDeletedProducts()
         {
             try
@@ -242,10 +229,6 @@ namespace Lombard_Mongo_Api.Controllers
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(keywords))
-                {
-                    return BadRequest("Keywords cannot be empty");
-                }
                 // Разбиваем ключевые слова по запятым
                 var keywordsList = keywords.Split(',').Select(k => k.Trim()).ToList();
                 // Формируем фильтр для поиска по всем полям
