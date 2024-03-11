@@ -6,6 +6,7 @@ using Lombard_Mongo_Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq.Expressions;
 
@@ -24,13 +25,15 @@ namespace Lombard_Mongo_Api.Controllers
         private readonly IConfiguration _configuration;
         private readonly ILogger<Fuji> _logger;
         private readonly IUserService _userService;
-        public UsersController(IConfiguration configuration, IMongoRepository<Users> dbRepository, ILogger<Fuji> logger, IUserService userRepository,IMongoRepository<Lombards> lombardsrepository)
+        private readonly IHttpContextAccessor _contextAccessor;
+        public UsersController(IConfiguration configuration, IMongoRepository<Users> dbRepository, ILogger<Fuji> logger, IUserService userRepository,IMongoRepository<Lombards> lombardsrepository, IHttpContextAccessor httpContextAccessor)
         {
             _configuration = configuration;
             _dbRepository = dbRepository;
             _logger = logger;
             _userService = userRepository;
             _LombardRepository = lombardsrepository;
+            _contextAccessor = httpContextAccessor;
         }
         [HttpGet]
         public async Task<ActionResult> GetUser(string id)
@@ -89,6 +92,65 @@ namespace Lombard_Mongo_Api.Controllers
                 }
             }
             catch (Exception ex) 
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+        [HttpPut]
+        public async Task<ActionResult> UpdateStatus(string id ,ModUpdateDto Dto)
+        {
+            try
+            {
+
+                var user = _contextAccessor.HttpContext.User;
+                var userId = user.Claims.FirstOrDefault(c => c.Type == "UserId");
+                var transac = _dbRepository.FindById(id);
+                if (transac != null)
+                {
+
+                    var transaction = new Users
+                    {
+                        Id = transac.Result.Id,
+                        username = Dto.username,
+                        PasswordHash = transac.Result.PasswordHash,
+                        PasswordSalt = transac.Result.PasswordSalt,
+                        role = Enums.Role.Moderator.ToString(),
+                        email = Dto.email,
+                        number = Dto.number,
+                        _idLombard = transac.Result._idLombard
+                    };
+                    _dbRepository.ReplaceOne(transaction);
+                    return Ok();
+                }
+                else
+                {
+                    return NotFound("User deos not found");
+                }
+            
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpDelete]
+        public async Task<ActionResult> DeleteTheUser(string id)
+        {
+            try
+            {
+                var user = _dbRepository.FindById(id);
+                if(user != null)
+                {
+                    _dbRepository.DeleteById(id);
+                    return Ok();
+                }
+                else
+                {
+                    return NotFound("Such user does not exist");
+                }
+            }
+            catch (Exception ex)
             {
                 return BadRequest(ex.Message);
             }
