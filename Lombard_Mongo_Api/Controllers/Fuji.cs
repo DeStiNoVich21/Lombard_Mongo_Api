@@ -4,6 +4,7 @@ using Lombard_Mongo_Api.MongoRepository.GenericRepository;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Hosting.Internal;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using System.Linq.Expressions;
@@ -20,53 +21,59 @@ namespace Lombard_Mongo_Api.Controllers
         private readonly IMongoRepository<Products> _dbRepository;
         private readonly IConfiguration _configuration;
         private readonly ILogger<Fuji> _logger;
-        public Fuji(IConfiguration configuration, IMongoRepository<Products> dbRepository, ILogger<Fuji> logger)
+        public Fuji(IConfiguration configuration, IMongoRepository<Products> dbRepository, ILogger<Fuji> logger, IWebHostEnvironment hostingEnvironment)
         {
             _configuration = configuration;
             _dbRepository = dbRepository;
             _logger = logger;
+            _hostingEnvironment = hostingEnvironment;
         }
         [HttpPost("addProduct")]
-        public async Task<ActionResult> AddProduct([FromForm] ProductsDto productDto)
+        public async Task<ActionResult> AddProduct([FromForm] ProductsDto productDto, IFormFile image)
         {
             try
             {
+                if (productDto == null)
+                {
+                    return BadRequest("Отсутствуют данные о продукте.");
+                }
+                if (image == null || image.Length == 0)
+                {
+                    return BadRequest("Требуется файл изображения.");
+                }
                 if (!User.Identity.IsAuthenticated)
                 {
-                    return Unauthorized("User is not authenticated");
+                    return Unauthorized("Пользователь не авторизован");
                 }
-                // Преобразуем изображение из base64 в массив байтов
-                byte[] imageBytes = Convert.FromBase64String(productDto.imageBase64);
-                // Генерируем уникальное имя файла
-                string fileName = Guid.NewGuid().ToString() + ".jpg"; // Или любое другое расширение изображения
-                // Получаем относительный путь к файлу изображения
+                // Генерация уникального имени файла
+                string fileName = $"{Guid.NewGuid()}{Path.GetExtension(image.FileName)}";
+                // Определение относительного пути
                 string relativeImagePath = Path.Combine("material", fileName);
-                // Сохраняем изображение на сервере
+                // Определение абсолютного пути
                 string imagePath = Path.Combine(_hostingEnvironment.ContentRootPath, relativeImagePath);
+                // Сохранение изображения на файловой системе
                 using (var fileStream = new FileStream(imagePath, FileMode.Create))
                 {
-                    await fileStream.WriteAsync(imageBytes, 0, imageBytes.Length);
+                    await image.CopyToAsync(fileStream);
                 }
-                // Создаем объект продукта для сохранения в БД
                 var product = new Products
                 {
                     name = productDto.name,
                     category = productDto.category,
-                    image = relativeImagePath, // Сохраняем относительный путь к изображению
+                    ImageFileName = fileName, // Сохранение имени файла в базе данных
                     description = productDto.description,
                     price = productDto.price,
                     status = productDto.status,
                     IsDeleted = productDto.IsDeleted
                 };
-                // Вставляем объект Products в базу данных
                 _dbRepository.InsertOne(product);
-                _logger.LogInformation($"Product has been added: {product.name}");
+                _logger.LogInformation($"Продукт был добавлен: {product.name}");
                 return Ok();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "An error occurred while adding the product");
-                return StatusCode(500, $"An error has occurred.: {ex.Message}");
+                _logger.LogError(ex, "Произошла ошибка при добавлении продукта");
+                return StatusCode(500, $"Произошла ошибка: {ex.Message}");
             }
         }
         [HttpGet("products")]
