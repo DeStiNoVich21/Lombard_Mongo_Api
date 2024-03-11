@@ -17,7 +17,7 @@ namespace Lombard_Mongo_Api.Controllers
     [ApiController]
     //[Authorize(Roles = "admin")] 
     [EnableCors("_myAllowSpecificOrigins")]
-    [Authorize]
+    [Authorize(Roles  ="Admin")]
     public class TransactionHistoryController : Controller
     {
         private readonly IMongoRepository<TransactionHistory> _dbRepository;
@@ -39,7 +39,7 @@ namespace Lombard_Mongo_Api.Controllers
                 {
                     return Unauthorized("User is not authenticated");
                 }
-                var products = _dbRepository.AsQueryable().ToList();
+                var products = _dbRepository.AsQueryable().Where(p => p.status != "Completed").ToList();
                 return Ok(products);
             }
             catch (Exception ex)
@@ -55,7 +55,7 @@ namespace Lombard_Mongo_Api.Controllers
             {
 
                 var user = _contextAccessor.HttpContext.User;
-                var userId = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Name);
+                var userId = user.Claims.FirstOrDefault(c => c.Type == "UserId");
 
                 var productcheck = _productsRepository.FindById(obj._idProduct.ToString()) ;
 
@@ -89,13 +89,17 @@ namespace Lombard_Mongo_Api.Controllers
             {
 
                 var user = _contextAccessor.HttpContext.User;
-                var userId = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+                var userId = user.Claims.FirstOrDefault(c => c.Type == "UserId");
                 var transac = _dbRepository.FindById(dto.Id);
+                if(transac != null) 
+                {
+                    return NotFound("Transaction does not exist");
+                }
                 var transaction = new TransactionHistory
                 {
-                    Id = "",
+                    Id = dto.Id,
                     _idUser = userId.ToString(),
-                    _idProduct = transac.Id.ToString(),
+                    _idProduct = transac.Result._idProduct.ToString(),
                     status = dto.status
                 };
                 _dbRepository.ReplaceOne(transaction);

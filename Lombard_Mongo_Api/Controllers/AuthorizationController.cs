@@ -57,7 +57,7 @@ namespace Lombard_Mongo_Api.Controllers
                 var claims = new List<Claim>
                 {
                       new Claim("UserId", user.Id.ToString()),
-                      new Claim("UserRole", user.role)
+                      new Claim(ClaimTypes.Role.ToString() , user.role)
                 };
 
                 SymmetricSecurityKey GetSymmetricSecurityKey() =>

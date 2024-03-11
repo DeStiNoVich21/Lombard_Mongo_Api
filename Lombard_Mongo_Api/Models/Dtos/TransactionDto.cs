@@ -24,8 +24,6 @@ namespace Lombard_Mongo_Api.Models.Dtos
     public class TransactionUpdateDto
     {
         [BsonId]
-        [BsonRepresentation(BsonType.ObjectId)]
-
         public string Id { get; set; }
 
         [BsonElement("Status")]
