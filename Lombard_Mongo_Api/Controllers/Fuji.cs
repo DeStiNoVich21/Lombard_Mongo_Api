@@ -16,6 +16,7 @@ namespace Lombard_Mongo_Api.Controllers
     [Authorize]
     public class Fuji : ControllerBase
     {
+        private readonly IWebHostEnvironment _hostingEnvironment;
         private readonly IMongoRepository<Products> _dbRepository;
         private readonly IConfiguration _configuration;
         private readonly ILogger<Fuji> _logger;
@@ -26,7 +27,7 @@ namespace Lombard_Mongo_Api.Controllers
             _logger = logger;
         }
         [HttpPost("addProduct")]
-        public async Task<ActionResult> AddProduct([FromBody] ProductsDto productDto)
+        public async Task<ActionResult> AddProduct([FromForm] ProductsDto productDto)
         {
             try
             {
@@ -34,16 +35,30 @@ namespace Lombard_Mongo_Api.Controllers
                 {
                     return Unauthorized("User is not authenticated");
                 }
+                // Преобразуем изображение из base64 в массив байтов
+                byte[] imageBytes = Convert.FromBase64String(productDto.imageBase64);
+                // Генерируем уникальное имя файла
+                string fileName = Guid.NewGuid().ToString() + ".jpg"; // Или любое другое расширение изображения
+                // Получаем относительный путь к файлу изображения
+                string relativeImagePath = Path.Combine("material", fileName);
+                // Сохраняем изображение на сервере
+                string imagePath = Path.Combine(_hostingEnvironment.ContentRootPath, relativeImagePath);
+                using (var fileStream = new FileStream(imagePath, FileMode.Create))
+                {
+                    await fileStream.WriteAsync(imageBytes, 0, imageBytes.Length);
+                }
+                // Создаем объект продукта для сохранения в БД
                 var product = new Products
                 {
                     name = productDto.name,
                     category = productDto.category,
-                    image = productDto.image,
+                    image = relativeImagePath, // Сохраняем относительный путь к изображению
                     description = productDto.description,
                     price = productDto.price,
                     status = productDto.status,
                     IsDeleted = productDto.IsDeleted
                 };
+                // Вставляем объект Products в базу данных
                 _dbRepository.InsertOne(product);
                 _logger.LogInformation($"Product has been added: {product.name}");
                 return Ok();

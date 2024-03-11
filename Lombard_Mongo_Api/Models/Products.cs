@@ -1,7 +1,8 @@
-﻿using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
-using Microsoft.AspNetCore.Components.Web;
+﻿using MongoDB.Bson.Serialization.Attributes;
+using MongoDB.Bson;
 using Lombard_Mongo_Api.MongoRepository.GenericRepository;
+using System.ComponentModel.DataAnnotations;
+using System.IO;
 namespace Lombard_Mongo_Api.Models
 {
     public class Products : IDocument
@@ -9,28 +10,20 @@ namespace Lombard_Mongo_Api.Models
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
         public string Id { get; set; } = string.Empty;
-
         [BsonElement("name")]
         public string name { get; set; } = string.Empty;
-
         [BsonElement("category")]
         public string category { get; set; } = string.Empty;
-
         [BsonElement("Brand")]
-        public string brand {  get; set; } = string.Empty;
-
+        public string brand { get; set; } = string.Empty;
         [BsonElement("image")]
-        public string image { get; set; } = string.Empty;
-
+        public string image { get; set; } = string.Empty; // Тип изображения изменен на строку для хранения пути к файлу
         [BsonElement("description")]
         public string description { get; set; } = string.Empty;
-
         [BsonElement("price")]
         public int price { get; set; }
-
         [BsonElement("status")]
         public string status { get; set; } = string.Empty;
-
         [BsonElement("isdeleted")]
         public bool IsDeleted { get; set; }
     }
