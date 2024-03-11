@@ -4,6 +4,7 @@ using Lombard_Mongo_Api.Models;
 using Lombard_Mongo_Api.Models.Dtos;
 using Lombard_Mongo_Api.MongoRepository.GenericRepository;
 using Lombard_Mongo_Api.Services;
+using Lombard_Mongo_Api.Helpers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
@@ -105,7 +106,7 @@ namespace Lombard_Mongo_Api.Controllers
                     username = obj.username,
                     PasswordHash = passwordHash,
                     PasswordSalt = passwordSalt,
-                    role = "User",
+                    role = Enums.Role.User.ToString(),
                     email = obj.email,
                     number = obj.number,
                     _idLombard = null
