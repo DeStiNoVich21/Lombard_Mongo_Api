@@ -1,5 +1,4 @@
-﻿using Lombard_Mongo_Api.Models;
-using Lombard_Mongo_Api.MongoRepository.GenericRepository;
+﻿using Lombard_Mongo_Api.MongoRepository.GenericRepository;
 using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OAuth;
@@ -20,6 +19,7 @@ var builder = WebApplication.CreateBuilder(args);
 var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 SymmetricSecurityKey GetSymmetricSecurityKey() =>
        new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JwtSettings:Key"]));
+
 builder.Services.AddControllers();
 
 builder.Services.AddCors(options =>
@@ -27,13 +27,10 @@ builder.Services.AddCors(options =>
     options.AddPolicy(name: MyAllowSpecificOrigins,
                       policy =>
                       {
-                          policy.WithOrigins("http://127.0.0.1:5173",
-                                             "http://127.0.0.1:7211",
-                                              "https://r941rsd2-7211.euw.devtunnels.ms",
-                                         
-                                              "http://localhost:5173")
-                                                .AllowAnyHeader()
-                                                  .AllowAnyMethod();
+                          policy.WithOrigins("http://localhost:5173")
+                              .AllowAnyHeader()
+                              .AllowAnyMethod()
+                              .AllowCredentials();
                       });
 });
 
@@ -49,19 +46,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     {
         options.TokenValidationParameters = new TokenValidationParameters
         {
-            // óêàçûâàåò, áóäåò ëè âàëèäèðîâàòüñÿ èçäàòåëü ïðè âàëèäàöèè òîêåíà
             ValidateIssuer = true,
-            // ñòðîêà, ïðåäñòàâëÿþùàÿ èçäàòåëÿ
             ValidIssuer = builder.Configuration["JwtSettings:Issuer"],
-            // áóäåò ëè âàëèäèðîâàòüñÿ ïîòðåáèòåëü òîêåíà
             ValidateAudience = true,
-            // óñòàíîâêà ïîòðåáèòåëÿ òîêåíà
             ValidAudience = builder.Configuration["JwtSettings:Audience"],
-            // áóäåò ëè âàëèäèðîâàòüñÿ âðåìÿ ñóùåñòâîâàíèÿ
             ValidateLifetime = true,
-            // óñòàíîâêà êëþ÷à áåçîïàñíîñòè
             IssuerSigningKey = GetSymmetricSecurityKey(),
-            // âàëèäàöèÿ êëþ÷à áåçîïàñíîñòè
             ValidateIssuerSigningKey = true,
         };
     });
@@ -79,7 +69,6 @@ builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });
 
-    // Äîáàâüòå àâòîðèçàöèþ
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Description = "JWT Authorization header using the Bearer scheme",
@@ -112,8 +101,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseAuthorization();
 app.UseCors(MyAllowSpecificOrigins);
+app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
