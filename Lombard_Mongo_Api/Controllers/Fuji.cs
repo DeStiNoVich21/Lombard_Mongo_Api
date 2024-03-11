@@ -77,6 +77,7 @@ namespace Lombard_Mongo_Api.Controllers
             }
         }
         [HttpGet("products")]
+        [AllowAnonymous]
         public async Task<ActionResult<IEnumerable<Products>>> GetProducts()
         {
             try
@@ -96,6 +97,7 @@ namespace Lombard_Mongo_Api.Controllers
             }
         }
         [HttpGet("product/{id}")]
+        [AllowAnonymous]
         public async Task<ActionResult<Products>> GetProductById(string id)
         {
             try
@@ -119,6 +121,7 @@ namespace Lombard_Mongo_Api.Controllers
             }
         }
         [HttpGet("categories")]
+        [AllowAnonymous]
         public async Task<ActionResult<IEnumerable<string>>> GetUniqueCategories()
         {
             try
@@ -138,6 +141,7 @@ namespace Lombard_Mongo_Api.Controllers
             }
         }
         [HttpGet("products/category/{category}")]
+        [AllowAnonymous]
         public async Task<ActionResult<IEnumerable<Products>>> GetProductsByCategory(string category)
         {
             try
@@ -233,6 +237,7 @@ namespace Lombard_Mongo_Api.Controllers
             }
         }
         [HttpGet("search")]
+        [AllowAnonymous]
         public async Task<ActionResult<List<Products>>> SearchProductsByKeywords([FromQuery] string keywords)
         {
             try
@@ -271,6 +276,7 @@ namespace Lombard_Mongo_Api.Controllers
             }
         }
         [HttpGet("getImage/{imageName}")]
+        [AllowAnonymous]
         public IActionResult GetImage(string imageName)
         {
             try
