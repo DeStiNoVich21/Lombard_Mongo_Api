@@ -270,6 +270,28 @@ namespace Lombard_Mongo_Api.Controllers
                 return StatusCode(500, $"Server error: {ex.Message}");
             }
         }
-
+        [HttpGet("getImage/{imageName}")]
+        public IActionResult GetImage(string imageName)
+        {
+            try
+            {
+                // Путь к папке, где хранятся изображения
+                var imagePath = Path.Combine(_hostingEnvironment.ContentRootPath, "material", imageName);
+                if (!System.IO.File.Exists(imagePath))
+                {
+                    // Если файл не существует, возвращаем NotFound
+                    return NotFound();
+                }
+                // Чтение содержимого файла
+                var imageBytes = System.IO.File.ReadAllBytes(imagePath);
+                // Возвращаем изображение вместе с соответствующим заголовком HTTP
+                return File(imageBytes, "image/jpeg"); // Предполагается, что изображение в формате JPEG
+            }
+            catch (Exception ex)
+            {
+                // В случае ошибки возвращаем код состояния 500 (внутренняя ошибка сервера)
+                return StatusCode(500, $"Произошла ошибка: {ex.Message}");
+            }
+        }
     }
 }
