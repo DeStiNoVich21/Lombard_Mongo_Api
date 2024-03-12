@@ -15,5 +15,10 @@
             Completed,
             Rejected
         }
+        public enum revengeancestatus
+        {
+            Reserved,
+            In_stock
+        }
     }
 }

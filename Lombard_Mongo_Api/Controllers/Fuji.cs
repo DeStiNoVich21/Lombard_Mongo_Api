@@ -1,4 +1,5 @@
-﻿using Lombard_Mongo_Api.Models;
+﻿using Lombard_Mongo_Api.Helpers;
+using Lombard_Mongo_Api.Models;
 using Lombard_Mongo_Api.Models.Dtos;
 using Lombard_Mongo_Api.MongoRepository.GenericRepository;
 using Microsoft.AspNetCore.Authorization;
@@ -301,6 +302,38 @@ namespace Lombard_Mongo_Api.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Error while retrieving products for brand {brand}");
+                return StatusCode(500, $"Server error: {ex.Message}");
+            }
+        }
+        [HttpPatch("product/{id}/status")]
+        [Authorize]
+        public async Task<ActionResult> UpdateProductStatus(string id, [FromBody] string status)
+        {
+            try
+            {
+                if (!User.Identity.IsAuthenticated)
+                {
+                    return Unauthorized("User is not authenticated");
+                }
+                if (!Enum.IsDefined(typeof(Enums.revengeancestatus), status))
+                {
+                    return BadRequest("Invalid status value. Status must be either 'Reserved' or 'In_stock'.");
+                }
+                // Retrieve the product by id
+                var product = await _dbRepository.FindById(id);
+                if (product == null)
+                {
+                    return NotFound($"Product with ID {id} not found");
+                }
+                // Update the status field
+                product.status = status;
+                _dbRepository.ReplaceOne(product);
+                _logger.LogInformation($"Status for product with ID {id} has been updated to {status}");
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error while updating status for product with ID {id}");
                 return StatusCode(500, $"Server error: {ex.Message}");
             }
         }
