@@ -55,7 +55,7 @@ namespace Lombard_Mongo_Api.Controllers
                 return BadRequest(ex.Message);
             }
         }
-        [HttpPost]
+        [HttpPost("AddMod")]
         public async Task<ActionResult> AddMod(ModDto obj)
         {
             try
@@ -96,7 +96,7 @@ namespace Lombard_Mongo_Api.Controllers
                 return BadRequest(ex.Message);
             }
         }
-        [HttpPut]
+        [HttpPut("UpdateMod")]
         public async Task<ActionResult> UpdateMod(string id ,ModUpdateDto Dto)
         {
             try
