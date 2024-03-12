@@ -25,6 +25,21 @@ namespace Lombard_Mongo_Api.Models.Dtos
         public string number { get; set; } = string.Empty;
 
     }
+    public class UsersGetInfoDto
+    {
+        [BsonElement("username")]
+        public string username { get; set; } = string.Empty;
+
+        [BsonElement("_idLombard")]
+        public string _idLombard { get; set; }
+
+        [BsonElement("email")]
+        public string email { get; set; } = string.Empty;
+
+        [BsonElement("number")]
+        public string number { get; set; } = string.Empty;
+
+    }
     public class ModDto
     {
         [BsonElement("username")]

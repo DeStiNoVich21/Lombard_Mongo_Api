@@ -35,7 +35,7 @@ namespace Lombard_Mongo_Api.Controllers
             _LombardRepository = lombardsrepository;
             _contextAccessor = httpContextAccessor;
         }
-        [HttpGet]
+        [HttpGet("GetUser")]
         public async Task<ActionResult> GetUser(string id)
         {
             try 
@@ -53,6 +53,26 @@ namespace Lombard_Mongo_Api.Controllers
             catch (Exception ex) 
             {
                 return BadRequest(ex.Message);
+            }
+        }
+        [HttpGet("GetUserInfo")]
+        public async Task<ActionResult> GetUserInfo(string id)
+        {
+            try 
+            {
+                var user = await _dbRepository.FindById(id);
+                var userinfo = new UsersGetInfoDto()
+                {
+                    username = user.username,
+                    number = user.number,
+                    email = user.email,
+                    _idLombard = user._idLombard
+                };
+                return Ok(userinfo);    
+            }
+            catch(Exception ex) 
+            {
+                return BadRequest(ex);
             }
         }
         [HttpPost("AddMod")]
