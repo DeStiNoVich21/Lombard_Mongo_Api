@@ -97,7 +97,7 @@ namespace Lombard_Mongo_Api.Controllers
             }
         }
         [HttpPut]
-        public async Task<ActionResult> UpdateStatus(string id ,ModUpdateDto Dto)
+        public async Task<ActionResult> UpdateMod(string id ,ModUpdateDto Dto)
         {
             try
             {
@@ -127,6 +127,43 @@ namespace Lombard_Mongo_Api.Controllers
                     return NotFound("User deos not found");
                 }
             
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+        [HttpPut]
+        public async Task<ActionResult> UpdateUser(string id, ModUpdateDto Dto)
+        {
+            try
+            {
+
+                var user = _contextAccessor.HttpContext.User;
+                var userId = user.Claims.FirstOrDefault(c => c.Type == "UserId");
+                var transac = _dbRepository.FindById(id);
+                if (transac != null)
+                {
+
+                    var transaction = new Users
+                    {
+                        Id = transac.Result.Id,
+                        username = Dto.username,
+                        PasswordHash = transac.Result.PasswordHash,
+                        PasswordSalt = transac.Result.PasswordSalt,
+                        role = Enums.Role.User.ToString(),
+                        email = Dto.email,
+                        number = Dto.number,
+                        _idLombard = null
+                    };
+                    _dbRepository.ReplaceOne(transaction);
+                    return Ok();
+                }
+                else
+                {
+                    return NotFound("User deos not found");
+                }
+
             }
             catch (Exception ex)
             {
