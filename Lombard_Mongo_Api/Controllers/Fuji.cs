@@ -60,11 +60,13 @@ namespace Lombard_Mongo_Api.Controllers
                 {
                     name = productDto.name,
                     category = productDto.category,
-                    ImageFileName = fileName, // Сохранение имени файла в базе данных
+                    ImageFileName = fileName,
                     description = productDto.description,
                     price = productDto.price,
                     status = productDto.status,
-                    IsDeleted = productDto.IsDeleted
+                    IsDeleted = productDto.IsDeleted,
+                    LombardId = productDto.LombardId,
+                    Brand = productDto.brand  // Добавляем поле бренд
                 };
                 _dbRepository.InsertOne(product);
                 _logger.LogInformation($"Продукт был добавлен: {product.name}");
@@ -104,8 +106,8 @@ namespace Lombard_Mongo_Api.Controllers
                     return NotFound($"ID {id} не найден");
                 }
                 _logger.LogInformation($"Продукт с ID {id} был найден");
-                return Ok(product);
-            }
+                return Ok(new { product.Id, product.name, product.category, product.description, product.price, product.status, product.IsDeleted, product.Brand });
+                }
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Ошибка при поиске продукта с ID {id}");

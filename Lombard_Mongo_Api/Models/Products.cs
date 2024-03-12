@@ -14,7 +14,8 @@ namespace Lombard_Mongo_Api.Models
         public string name { get; set; } = string.Empty;
         [BsonElement("category")]
         public string category { get; set; } = string.Empty;
-        // Убрано поле brand
+        [BsonElement("brand")]
+        public string Brand { get; set; } = string.Empty;
         [BsonElement("imageFileName")]
         public string ImageFileName { get; set; } // Имя файла изображения
         [BsonElement("description")]
@@ -25,5 +26,7 @@ namespace Lombard_Mongo_Api.Models
         public string status { get; set; } = string.Empty;
         [BsonElement("isdeleted")]
         public bool IsDeleted { get; set; }
+        [BsonElement("lombardId")]
+        public string LombardId { get; set; } = string.Empty;
     }
 }
