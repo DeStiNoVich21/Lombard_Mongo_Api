@@ -284,5 +284,25 @@ namespace Lombard_Mongo_Api.Controllers
                 return StatusCode(500, $"Произошла ошибка: {ex.Message}");
             }
         }
+        [HttpGet("products/brand/{brand}")]
+        [AllowAnonymous]
+        public async Task<ActionResult<IEnumerable<Products>>> GetProductsByBrand(string brand)
+        {
+            try
+            {
+                var products = _dbRepository.AsQueryable().Where(p => p.Brand.ToLower() == brand.ToLower() && !p.IsDeleted).ToList();
+                if (products.Count == 0)
+                {
+                    return NotFound($"No products found for brand: {brand}");
+                }
+                _logger.LogInformation($"Products for brand {brand} retrieved successfully");
+                return Ok(products);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error while retrieving products for brand {brand}");
+                return StatusCode(500, $"Server error: {ex.Message}");
+            }
+        }
     }
 }
