@@ -17,17 +17,20 @@ namespace Lombard_Mongo_Api.Controllers
     [ApiController]
     //[Authorize(Roles = "admin")] 
     [EnableCors("_myAllowSpecificOrigins")]
-    [Authorize(Roles  ="Admin")]
+    [Authorize]
     public class TransactionHistoryController : Controller
     {
         private readonly IMongoRepository<TransactionHistory> _dbRepository;
         private readonly IMongoRepository<Products> _productsRepository;
+        private readonly IMongoRepository<Users> _usersRepository;
         private readonly IHttpContextAccessor _contextAccessor;
-        public TransactionHistoryController(IMongoRepository<TransactionHistory> dbRepository,IHttpContextAccessor httpContextAccessor,IMongoRepository<Products> products)
+        public TransactionHistoryController(IMongoRepository<TransactionHistory> dbRepository,IHttpContextAccessor httpContextAccessor,
+            IMongoRepository<Products> products, IMongoRepository<Users> usersrepository)
         {
             _dbRepository = dbRepository;
             _contextAccessor = httpContextAccessor;
             _productsRepository = products;
+            _usersRepository = usersrepository;
         }
 
         [HttpGet("GetTransactionsList")]
@@ -39,12 +42,56 @@ namespace Lombard_Mongo_Api.Controllers
                 {
                     return Unauthorized("User is not authenticated");
                 }
-                var products = _dbRepository.AsQueryable().Where(p => p.status != "Completed").ToList();
+                var products = _dbRepository.AsQueryable().ToList();
                 return Ok(products);
             }
             catch (Exception ex)
             {
                 return StatusCode(500, $"Internal server error {ex.Message}");
+            }
+        }
+
+        [HttpGet("GetMyTransactions")]
+        public async Task<ActionResult<IEnumerable<TransactionHistory>>> GetMyTransactions(string id)
+        {
+            try
+            {
+                var mytransactions = _dbRepository.AsQueryable().Where(p => p._idUser == id);
+                if(mytransactions != null)
+                {
+                    return Ok(mytransactions);
+                }
+                else
+                {
+                    return NotFound("You didnt made any transactions");
+                }    
+            }
+            catch (Exception ex) 
+            {
+                return BadRequest(ex);
+            }
+        }
+
+        [HttpGet("GetLombardTransactions")]
+        public async Task<ActionResult<IEnumerable<TransactionHistory>>> GetLombardTransactions()
+        {
+            try
+            {
+                var userId = _contextAccessor.HttpContext.User.Claims.FirstOrDefault(c => c.Type == "UserId");
+                var user = _usersRepository.FindById(userId.ToString());
+                var transactions = _dbRepository.FindById(user.Result._idLombard);
+                if(transactions != null)
+                {
+                    return Ok(transactions);
+                }
+                else
+                {
+                    return NotFound("Lombard didnt made any transactions yet");
+                }
+            }
+            catch (Exception ex) 
+            {
+                return BadRequest(ex);
             }
         }
 
