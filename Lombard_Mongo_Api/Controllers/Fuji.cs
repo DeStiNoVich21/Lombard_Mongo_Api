@@ -222,26 +222,6 @@ namespace Lombard_Mongo_Api.Controllers
                 return StatusCode(500, $"Произошла ошибка: {ex.Message}");
             }
         }
-        [HttpGet("products/brand/{brand}")]
-        [AllowAnonymous]
-        public async Task<ActionResult<IEnumerable<Products>>> GetProductsByBrand(string brand)
-        {
-            try
-            {
-                var products = _dbRepository.AsQueryable().Where(p => p.Brand.ToLower() == brand.ToLower() && !p.IsDeleted).ToList();
-                if (products.Count == 0)
-                {
-                    return NotFound($"No products found for brand: {brand}");
-                }
-                _logger.LogInformation($"Products for brand {brand} retrieved successfully");
-                return Ok(products);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Error while retrieving products for brand {brand}");
-                return StatusCode(500, $"Server error: {ex.Message}");
-            }
-        }
         [HttpPatch("product/{id}/status")]
         [Authorize]
         public async Task<ActionResult> UpdateProductStatus(string id, [FromBody] string status)
@@ -272,39 +252,65 @@ namespace Lombard_Mongo_Api.Controllers
                 return StatusCode(500, $"Server error: {ex.Message}");
             }
         }
-        [HttpGet("products/price-range")]
+        [HttpGet("products/filter")]
         [AllowAnonymous]
-        public async Task<ActionResult<IEnumerable<Products>>> GetProductsByPriceRange(int minPrice, int maxPrice)
+        public async Task<ActionResult<IEnumerable<Products>>> GetFilteredProducts(string brand = null, int? minPrice = null, int? maxPrice = null)
         {
             try
             {
-                if (minPrice < 0 || maxPrice < 0 || minPrice > maxPrice)
+                var query = _dbRepository.AsQueryable().Where(p => !p.IsDeleted);
+
+                if (!string.IsNullOrEmpty(brand))
                 {
-                    return BadRequest("Некорректный диапазон цен.");
+                    query = query.Where(p => p.Brand.ToLower() == brand.ToLower());
                 }
 
-                var products = _dbRepository.AsQueryable().Where(p => p.price >= minPrice && p.price <= maxPrice && !p.IsDeleted).ToList();
-
-                // Добавим проверку для включения продуктов с ценой, равной maxPrice
-                if (maxPrice != 0)
+                if (minPrice.HasValue)
                 {
-                    var productsWithMaxPrice = _dbRepository.AsQueryable().Where(p => p.price == maxPrice && !p.IsDeleted).ToList();
-                    if (productsWithMaxPrice.Any())
-                    {
-                        products.AddRange(productsWithMaxPrice);
-                    }
+                    query = query.Where(p => p.price >= minPrice.Value);
                 }
+
+                if (maxPrice.HasValue && maxPrice != 0)
+                {
+                    query = query.Where(p => p.price <= maxPrice.Value);
+                }
+
+                var products = query.ToList();
 
                 if (products.Count == 0)
                 {
-                    return NotFound($"No products found within the price range [{minPrice}, {maxPrice}]");
+                    if (!string.IsNullOrEmpty(brand))
+                    {
+                        return NotFound($"No products found for brand '{brand}'");
+                    }
+                    else
+                    {
+                        return NotFound($"No products found within the specified price range");
+                    }
                 }
-                _logger.LogInformation($"Products within the price range [{minPrice}, {maxPrice}] retrieved successfully");
+
+                if (!string.IsNullOrEmpty(brand))
+                {
+                    _logger.LogInformation($"Products for brand '{brand}' retrieved successfully");
+                }
+                else
+                {
+                    _logger.LogInformation($"Products within the specified price range retrieved successfully");
+                }
+
                 return Ok(products);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error while retrieving products within the price range [{minPrice}, {maxPrice}]");
+                if (!string.IsNullOrEmpty(brand))
+                {
+                    _logger.LogError(ex, $"Error while retrieving products for brand '{brand}'");
+                }
+                else
+                {
+                    _logger.LogError(ex, $"Error while retrieving products within the specified price range");
+                }
+
                 return StatusCode(500, $"Server error: {ex.Message}");
             }
         }
