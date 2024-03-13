@@ -46,17 +46,14 @@ namespace Lombard_Mongo_Api.Controllers
                 {
                     return Unauthorized("Пользователь не авторизован");
                 }
-                // Генерация уникального имени файла
                 string fileName = $"{Guid.NewGuid()}{Path.GetExtension(image.FileName)}";
-                // Определение относительного пути
                 string relativeImagePath = Path.Combine("material", fileName);
-                // Определение абсолютного пути
                 string imagePath = Path.Combine(_hostingEnvironment.ContentRootPath, relativeImagePath);
-                // Сохранение изображения на файловой системе
                 using (var fileStream = new FileStream(imagePath, FileMode.Create))
                 {
                     await image.CopyToAsync(fileStream);
                 }
+                productDto.status = Enums.revengeancestatus.In_stock.ToString();
                 var product = new Products
                 {
                     name = productDto.name,
@@ -151,31 +148,6 @@ namespace Lombard_Mongo_Api.Controllers
                 return StatusCode(500, $"Server error: {ex.Message}");
             }
         }
-        [HttpDelete("product/{id}")]
-        [Authorize]
-        public async Task<ActionResult> DeleteProductById(string id)
-        {
-            try
-            {
-                if (!User.Identity.IsAuthenticated)
-                {
-                    return Unauthorized("ユーザーが認証されていません");
-                }
-                var product = await _dbRepository.FindById(id);
-                if (product == null)
-                {
-                    return NotFound($"Product with ID {id} not found");
-                }
-                _dbRepository.DeleteById(id);
-                _logger.LogInformation($"Product with ID {id} has been deleted successfully");
-                return Ok();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Error while deleting product with ID {id}");
-                return StatusCode(500, $"Server error: {ex.Message}");
-            }
-        }
         [HttpPatch("product/{id}/isdeleted")]
         [Authorize]
         public async Task<ActionResult> UpdateIsDeleted(string id, [FromBody] string isDeleted)
@@ -223,41 +195,6 @@ namespace Lombard_Mongo_Api.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error while retrieving deleted products");
-                return StatusCode(500, $"Server error: {ex.Message}");
-            }
-        }
-        [HttpGet("search")]
-        [AllowAnonymous]
-        public async Task<ActionResult<List<Products>>> SearchProductsByKeywords([FromQuery] string keywords)
-        {
-            try
-            {
-                // Разбиваем ключевые слова по запятым
-                var keywordsList = keywords.Split(',').Select(k => k.Trim()).ToList();
-                // Формируем фильтр для поиска по всем полям
-                var filter = Builders<Products>.Filter.Or(
-                    keywordsList.Select(keyword =>
-                        Builders<Products>.Filter.Where(p =>
-                            p.name.Contains(keyword) || // Ищем в имени
-                            p.category.Contains(keyword) || // Ищем в категории
-                            p.description.Contains(keyword) || // Ищем в описании
-                            p.price.ToString().Contains(keyword) || // Ищем в цене
-                            p.status.Contains(keyword) // Ищем в статусе
-                        )
-                    )
-                );
-                var products = await _dbRepository.FindAsync(filter);
-                if (products.Count == 0)
-                {
-                    _logger.LogInformation($"No products found with keywords: {string.Join(", ", keywordsList)}");
-                    return NotFound();
-                }
-                _logger.LogInformation($"Products containing keywords '{string.Join(", ", keywordsList)}' retrieved successfully");
-                return Ok(products);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Error while searching products with keywords '{keywords}'");
                 return StatusCode(500, $"Server error: {ex.Message}");
             }
         }
@@ -319,13 +256,11 @@ namespace Lombard_Mongo_Api.Controllers
                 {
                     return BadRequest("Invalid status value. Status must be either 'Reserved' or 'In_stock'.");
                 }
-                // Retrieve the product by id
                 var product = await _dbRepository.FindById(id);
                 if (product == null)
                 {
                     return NotFound($"Product with ID {id} not found");
                 }
-                // Update the status field
                 product.status = status;
                 _dbRepository.ReplaceOne(product);
                 _logger.LogInformation($"Status for product with ID {id} has been updated to {status}");
@@ -334,6 +269,42 @@ namespace Lombard_Mongo_Api.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Error while updating status for product with ID {id}");
+                return StatusCode(500, $"Server error: {ex.Message}");
+            }
+        }
+        [HttpGet("products/price-range")]
+        [AllowAnonymous]
+        public async Task<ActionResult<IEnumerable<Products>>> GetProductsByPriceRange(int minPrice, int maxPrice)
+        {
+            try
+            {
+                if (minPrice < 0 || maxPrice < 0 || minPrice > maxPrice)
+                {
+                    return BadRequest("Некорректный диапазон цен.");
+                }
+
+                var products = _dbRepository.AsQueryable().Where(p => p.price >= minPrice && p.price <= maxPrice && !p.IsDeleted).ToList();
+
+                // Добавим проверку для включения продуктов с ценой, равной maxPrice
+                if (maxPrice != 0)
+                {
+                    var productsWithMaxPrice = _dbRepository.AsQueryable().Where(p => p.price == maxPrice && !p.IsDeleted).ToList();
+                    if (productsWithMaxPrice.Any())
+                    {
+                        products.AddRange(productsWithMaxPrice);
+                    }
+                }
+
+                if (products.Count == 0)
+                {
+                    return NotFound($"No products found within the price range [{minPrice}, {maxPrice}]");
+                }
+                _logger.LogInformation($"Products within the price range [{minPrice}, {maxPrice}] retrieved successfully");
+                return Ok(products);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error while retrieving products within the price range [{minPrice}, {maxPrice}]");
                 return StatusCode(500, $"Server error: {ex.Message}");
             }
         }
