@@ -46,6 +46,10 @@ namespace Lombard_Mongo_Api.Controllers
                 {
                     return Unauthorized("Пользователь не авторизован");
                 }
+                if (productDto.price < 0)
+                {
+                    return BadRequest("Цена не может быть отрицательной.");
+                }
                 string fileName = $"{Guid.NewGuid()}{Path.GetExtension(image.FileName)}";
                 string relativeImagePath = Path.Combine("material", fileName);
                 string imagePath = Path.Combine(_hostingEnvironment.ContentRootPath, relativeImagePath);
@@ -209,21 +213,16 @@ namespace Lombard_Mongo_Api.Controllers
         {
             try
             {
-                // Путь к папке, где хранятся изображения
                 var imagePath = Path.Combine(_hostingEnvironment.ContentRootPath, "material", imageName);
                 if (!System.IO.File.Exists(imagePath))
                 {
-                    // Если файл не существует, возвращаем NotFound
                     return NotFound();
                 }
-                // Чтение содержимого файла
                 var imageBytes = System.IO.File.ReadAllBytes(imagePath);
-                // Возвращаем изображение вместе с соответствующим заголовком HTTP
-                return File(imageBytes, "image/jpeg"); // Предполагается, что изображение в формате JPEG
+                return File(imageBytes, "image/jpeg"); 
             }
             catch (Exception ex)
             {
-                // В случае ошибки возвращаем код состояния 500 (внутренняя ошибка сервера)
                 return StatusCode(500, $"Произошла ошибка: {ex.Message}");
             }
         }
@@ -263,6 +262,15 @@ namespace Lombard_Mongo_Api.Controllers
         {
             try
             {
+                if (minPrice.HasValue && minPrice < 0)
+                {
+                    return BadRequest("Минимальная цена не может быть отрицательной.");
+                }
+
+                if (maxPrice.HasValue && maxPrice < 0)
+                {
+                    return BadRequest("Максимальная цена не может быть отрицательной.");
+                }
                 var categoryProductsResponse = await GetProductsByCategory(category);
                 if (!(categoryProductsResponse.Result is OkObjectResult) || !(categoryProductsResponse.Result is ActionResult<IEnumerable<Products>>))
                 {
@@ -323,7 +331,8 @@ namespace Lombard_Mongo_Api.Controllers
                 {
                     ImageFileName = fileName,
                     category = category,
-                    name = name  // Добавляем поле имени
+                    name = name,
+                    IsDeleted = true // Устанавливаем значение IsDeleted в true
                 };
                 _dbRepository.InsertOne(product);
                 _logger.LogInformation($"Продукт '{name}' с изображением был добавлен в категорию: {category}");
