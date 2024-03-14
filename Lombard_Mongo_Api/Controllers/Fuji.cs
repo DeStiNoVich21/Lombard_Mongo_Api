@@ -105,7 +105,7 @@ namespace Lombard_Mongo_Api.Controllers
                 }
                 _logger.LogInformation($"Продукт с ID {id} был найден");
                 return Ok(new { product.Id, product.name, product.category, product.description, product.price, product.status, product.IsDeleted, product.Brand });
-                }
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Ошибка при поиске продукта с ID {id}");
@@ -118,7 +118,7 @@ namespace Lombard_Mongo_Api.Controllers
         {
             try
             {
-                var uniqueCategories =  _dbRepository.AsQueryable().Select(p => p.category).Distinct().ToList();
+                var uniqueCategories = _dbRepository.AsQueryable().Select(p => p.category).Distinct().ToList();
                 _logger.LogInformation($"Unique categories retrieved");
                 return Ok(uniqueCategories);
             }
@@ -254,64 +254,75 @@ namespace Lombard_Mongo_Api.Controllers
         }
         [HttpGet("products/filter")]
         [AllowAnonymous]
-        public async Task<ActionResult<IEnumerable<Products>>> GetFilteredProducts(string brand = null, int? minPrice = null, int? maxPrice = null)
+        public async Task<ActionResult<IEnumerable<Products>>> GetFilteredProducts(string brand = null, int? minPrice = null, int? maxPrice = null, string category = null)
         {
             try
             {
-                var query = _dbRepository.AsQueryable().Where(p => !p.IsDeleted);
-
+                var categoryProductsResponse = await GetProductsByCategory(category);
+                if (!(categoryProductsResponse.Result is OkObjectResult) || !(categoryProductsResponse.Result is ActionResult<IEnumerable<Products>>))
+                {
+                    return categoryProductsResponse;
+                }
+                var categoryProducts = ((OkObjectResult)categoryProductsResponse.Result).Value as IEnumerable<Products>;
+                var filteredProducts = categoryProducts.Where(p => !p.IsDeleted);
                 if (!string.IsNullOrEmpty(brand))
                 {
-                    query = query.Where(p => p.Brand.ToLower() == brand.ToLower());
+                    filteredProducts = filteredProducts.Where(p => p.Brand.ToLower() == brand.ToLower());
                 }
-
                 if (minPrice.HasValue)
                 {
-                    query = query.Where(p => p.price >= minPrice.Value);
+                    filteredProducts = filteredProducts.Where(p => p.price >= minPrice.Value);
                 }
-
                 if (maxPrice.HasValue && maxPrice != 0)
                 {
-                    query = query.Where(p => p.price <= maxPrice.Value);
+                    filteredProducts = filteredProducts.Where(p => p.price <= maxPrice.Value);
                 }
-
-                var products = query.ToList();
-
-                if (products.Count == 0)
-                {
-                    if (!string.IsNullOrEmpty(brand))
-                    {
-                        return NotFound($"No products found for brand '{brand}'");
-                    }
-                    else
-                    {
-                        return NotFound($"No products found within the specified price range");
-                    }
-                }
-
-                if (!string.IsNullOrEmpty(brand))
-                {
-                    _logger.LogInformation($"Products for brand '{brand}' retrieved successfully");
-                }
-                else
-                {
-                    _logger.LogInformation($"Products within the specified price range retrieved successfully");
-                }
-
-                return Ok(products);
+                return Ok(filteredProducts.ToList());
             }
             catch (Exception ex)
             {
-                if (!string.IsNullOrEmpty(brand))
+                _logger.LogError(ex, "Ошибка при фильтрации продуктов");
+                return StatusCode(500, $"Ошибка сервера: {ex.Message}");
+            }
+        }
+        [HttpPost("addProductWithCategoryAndImage")]
+        [Authorize]
+        public async Task<ActionResult> AddProductWithCategoryAndImage([FromForm] string category, IFormFile image)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(category))
                 {
-                    _logger.LogError(ex, $"Error while retrieving products for brand '{brand}'");
+                    return BadRequest("Отсутствует категория продукта.");
                 }
-                else
+                if (image == null || image.Length == 0)
                 {
-                    _logger.LogError(ex, $"Error while retrieving products within the specified price range");
+                    return BadRequest("Требуется файл изображения.");
                 }
-
-                return StatusCode(500, $"Server error: {ex.Message}");
+                if (!User.Identity.IsAuthenticated)
+                {
+                    return Unauthorized("Пользователь не авторизован");
+                }
+                string fileName = $"{category.ToLower().Replace(" ", "")}name.png";
+                string relativeImagePath = Path.Combine("material", fileName);
+                string imagePath = Path.Combine(_hostingEnvironment.ContentRootPath, relativeImagePath);
+                using (var fileStream = new FileStream(imagePath, FileMode.Create))
+                {
+                    await image.CopyToAsync(fileStream);
+                }
+                var product = new Products
+                {
+                    ImageFileName = fileName,
+                    category = category
+                };
+                _dbRepository.InsertOne(product);
+                _logger.LogInformation($"Продукт с изображением был добавлен в категорию: {category}");
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Произошла ошибка при добавлении продукта с изображением");
+                return StatusCode(500, $"Произошла ошибка: {ex.Message}");
             }
         }
     }
