@@ -271,6 +271,13 @@ namespace Lombard_Mongo_Api.Controllers
                 {
                     return BadRequest("Максимальная цена не может быть отрицательной.");
                 }
+
+                // Добавляем обработку исключения, если категория не была передана
+                if (category == null)
+                {
+                    return BadRequest("Категория не указана.");
+                }
+
                 var categoryProductsResponse = await GetProductsByCategory(category);
                 if (categoryProductsResponse == null || categoryProductsResponse.Result == null)
                 {
@@ -298,6 +305,10 @@ namespace Lombard_Mongo_Api.Controllers
                 {
                     return BadRequest("Failed to retrieve products in category.");
                 }
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest($"Некорректные аргументы запроса: {ex.Message}");
             }
             catch (Exception ex)
             {
