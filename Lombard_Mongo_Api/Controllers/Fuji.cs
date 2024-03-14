@@ -118,22 +118,21 @@ namespace Lombard_Mongo_Api.Controllers
         }
         [HttpGet("categories")]
         [AllowAnonymous]
-        public async Task<ActionResult<IEnumerable<object>>> GetCategoriesWithMatchingImageNamesAndProductNames()
+        public async Task<ActionResult<IEnumerable<string>>> GetUniqueCategories()
         {
             try
             {
-                var allProducts = await _dbRepository.GetAllAsync(); // Загрузка всех продуктов из базы данных
-                var matchingProducts = allProducts
-                    .Select(p => new { Category = p.category.ToLower(), ImageName = Path.GetFileNameWithoutExtension(p.ImageFileName)?.ToLower(), Name = p.name }) // Добавляем поле имени
-                    .Where(p => p.ImageName != null && p.Category == p.ImageName)
-                    .Select(p => new { Category = p.Category, ImageFileName = $"{p.ImageName}.png", Name = p.Name }) // Добавляем поле имени
+                var allProducts = await _dbRepository.GetAllAsync();
+                var uniqueCategories = allProducts
+                    .Select(p => p.category.ToLower())
+                    .Distinct()
                     .ToList();
-                _logger.LogInformation($"Список продуктов с категорией и именем изображения, совпадающими, получен успешно");
-                return Ok(matchingProducts);
+                _logger.LogInformation($"Уникальные категории получены успешно");
+                return Ok(uniqueCategories);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Ошибка при получении списка продуктов с одинаковой категорией и именем изображения");
+                _logger.LogError(ex, $"Ошибка при получении уникальных категорий");
                 return StatusCode(500, $"Ошибка сервера: {ex.Message}");
             }
         }
@@ -296,52 +295,6 @@ namespace Lombard_Mongo_Api.Controllers
             {
                 _logger.LogError(ex, "Ошибка при фильтрации продуктов");
                 return StatusCode(500, $"Ошибка сервера: {ex.Message}");
-            }
-        }
-        [HttpPost("addProductWithCategoryAndImage")]
-        [Authorize]
-        public async Task<ActionResult> AddProductWithCategoryAndImage([FromForm] string name, [FromForm] string category, IFormFile image)
-        {
-            try
-            {
-                if (string.IsNullOrEmpty(name))
-                {
-                    return BadRequest("Отсутствует имя продукта.");
-                }
-                if (string.IsNullOrEmpty(category))
-                {
-                    return BadRequest("Отсутствует категория продукта.");
-                }
-                if (image == null || image.Length == 0)
-                {
-                    return BadRequest("Требуется файл изображения.");
-                }
-                if (!User.Identity.IsAuthenticated)
-                {
-                    return Unauthorized("Пользователь не авторизован");
-                }
-                string fileName = $"{category.ToLower().Replace(" ", "")}.png";
-                string relativeImagePath = Path.Combine("material", fileName);
-                string imagePath = Path.Combine(_hostingEnvironment.ContentRootPath, relativeImagePath);
-                using (var fileStream = new FileStream(imagePath, FileMode.Create))
-                {
-                    await image.CopyToAsync(fileStream);
-                }
-                var product = new Products
-                {
-                    ImageFileName = fileName,
-                    category = category,
-                    name = name,
-                    IsDeleted = true // Устанавливаем значение IsDeleted в true
-                };
-                _dbRepository.InsertOne(product);
-                _logger.LogInformation($"Продукт '{name}' с изображением был добавлен в категорию: {category}");
-                return Ok();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Произошла ошибка при добавлении продукта с изображением");
-                return StatusCode(500, $"Произошла ошибка: {ex.Message}");
             }
         }
         [HttpPut("product/{id}")]
