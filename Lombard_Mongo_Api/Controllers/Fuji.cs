@@ -344,5 +344,51 @@ namespace Lombard_Mongo_Api.Controllers
                 return StatusCode(500, $"Произошла ошибка: {ex.Message}");
             }
         }
+        [HttpPut("product/{id}")]
+        [Authorize]
+        public async Task<ActionResult> UpdateProduct(string id, [FromForm] ProductsDto productDto, IFormFile? image = null)
+        {
+            try
+            {
+                if (!User.Identity.IsAuthenticated)
+                {
+                    return Unauthorized("User is not authenticated");
+                }
+                var existingProduct = await _dbRepository.FindById(id);
+                if (existingProduct == null)
+                {
+                    return NotFound($"Product with ID {id} not found");
+                }
+                existingProduct.name = productDto.name;
+                existingProduct.category = productDto.category;
+                existingProduct.description = productDto.description;
+                existingProduct.price = productDto.price;
+                existingProduct.Brand = productDto.brand;
+                if (image != null && image.Length > 0)
+                {
+                    string fileName = $"{Guid.NewGuid()}{Path.GetExtension(image.FileName)}";
+                    string relativeImagePath = Path.Combine("material", fileName);
+                    string imagePath = Path.Combine(_hostingEnvironment.ContentRootPath, relativeImagePath);
+                    var oldImagePath = Path.Combine(_hostingEnvironment.ContentRootPath, "material", existingProduct.ImageFileName);
+                    if (System.IO.File.Exists(oldImagePath))
+                    {
+                        System.IO.File.Delete(oldImagePath);
+                    }
+                    using (var fileStream = new FileStream(imagePath, FileMode.Create))
+                    {
+                        await image.CopyToAsync(fileStream);
+                    }
+                    existingProduct.ImageFileName = fileName;
+                }
+                _dbRepository.ReplaceOne(existingProduct);
+                _logger.LogInformation($"Product with ID {id} has been updated successfully");
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error while updating product with ID {id}");
+                return StatusCode(500, $"Server error: {ex.Message}");
+            }
+        }
     }
 }
