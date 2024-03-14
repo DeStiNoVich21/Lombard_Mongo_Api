@@ -104,7 +104,7 @@ namespace Lombard_Mongo_Api.Controllers
                     return NotFound($"ID {id} не найден");
                 }
                 _logger.LogInformation($"Продукт с ID {id} был найден");
-                return Ok(new { product.Id, product.name, product.category, product.description, product.price, product.status, product.IsDeleted, product.Brand });
+                return Ok(new { product.Id, product.name, product.category, product.description, product.price, product.status, product.IsDeleted, product.Brand, product.ImageFileName });
             }
             catch (Exception ex)
             {
