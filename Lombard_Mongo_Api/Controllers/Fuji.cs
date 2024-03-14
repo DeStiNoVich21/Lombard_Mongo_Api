@@ -118,21 +118,22 @@ namespace Lombard_Mongo_Api.Controllers
         }
         [HttpGet("categories")]
         [AllowAnonymous]
-        public async Task<ActionResult<IEnumerable<string>>> GetUniqueCategories()
+        public async Task<ActionResult<IEnumerable<object>>> GetCategoriesWithMatchingImageNamesAndProductNames()
         {
             try
             {
-                var allProducts = await _dbRepository.GetAllAsync();
-                var uniqueCategories = allProducts
-                    .Select(p => p.category.ToLower())
-                    .Distinct()
+                var allProducts = await _dbRepository.GetAllAsync(); // Загрузка всех продуктов из базы данных
+                var matchingProducts = allProducts
+                    .Select(p => new { Category = p.category.ToLower(), ImageName = Path.GetFileNameWithoutExtension(p.ImageFileName)?.ToLower(), Name = p.name }) // Добавляем поле имени
+                    .Where(p => p.ImageName != null && p.Category == p.ImageName)
+                    .Select(p => new { Category = p.Category, ImageFileName = $"{p.ImageName}.png", Name = p.Name }) // Добавляем поле имени
                     .ToList();
-                _logger.LogInformation($"Уникальные категории получены успешно");
-                return Ok(uniqueCategories);
+                _logger.LogInformation($"Список продуктов с категорией и именем изображения, совпадающими, получен успешно");
+                return Ok(matchingProducts);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Ошибка при получении уникальных категорий");
+                _logger.LogError(ex, $"Ошибка при получении списка продуктов с одинаковой категорией и именем изображения");
                 return StatusCode(500, $"Ошибка сервера: {ex.Message}");
             }
         }
@@ -218,7 +219,7 @@ namespace Lombard_Mongo_Api.Controllers
                     return NotFound();
                 }
                 var imageBytes = System.IO.File.ReadAllBytes(imagePath);
-                return File(imageBytes, "image/jpeg"); 
+                return File(imageBytes, "image/jpeg");
             }
             catch (Exception ex)
             {
@@ -297,50 +298,50 @@ namespace Lombard_Mongo_Api.Controllers
                 return StatusCode(500, $"Ошибка сервера: {ex.Message}");
             }
         }
-        [HttpPut("product/{id}")]
+        [HttpPost("addProductWithCategoryAndImage")]
         [Authorize]
-        public async Task<ActionResult> UpdateProduct(string id, [FromForm] ProductsDto productDto, IFormFile? image = null)
+        public async Task<ActionResult> AddProductWithCategoryAndImage([FromForm] string name, [FromForm] string category, IFormFile image)
         {
             try
             {
+                if (string.IsNullOrEmpty(name))
+                {
+                    return BadRequest("Отсутствует имя продукта.");
+                }
+                if (string.IsNullOrEmpty(category))
+                {
+                    return BadRequest("Отсутствует категория продукта.");
+                }
+                if (image == null || image.Length == 0)
+                {
+                    return BadRequest("Требуется файл изображения.");
+                }
                 if (!User.Identity.IsAuthenticated)
                 {
-                    return Unauthorized("User is not authenticated");
+                    return Unauthorized("Пользователь не авторизован");
                 }
-                var existingProduct = await _dbRepository.FindById(id);
-                if (existingProduct == null)
+                string fileName = $"{category.ToLower().Replace(" ", "")}.png";
+                string relativeImagePath = Path.Combine("material", fileName);
+                string imagePath = Path.Combine(_hostingEnvironment.ContentRootPath, relativeImagePath);
+                using (var fileStream = new FileStream(imagePath, FileMode.Create))
                 {
-                    return NotFound($"Product with ID {id} not found");
+                    await image.CopyToAsync(fileStream);
                 }
-                existingProduct.name = productDto.name;
-                existingProduct.category = productDto.category;
-                existingProduct.description = productDto.description;
-                existingProduct.price = productDto.price;
-                existingProduct.Brand = productDto.brand;
-                if (image != null && image.Length > 0)
+                var product = new Products
                 {
-                    string fileName = $"{Guid.NewGuid()}{Path.GetExtension(image.FileName)}";
-                    string relativeImagePath = Path.Combine("material", fileName);
-                    string imagePath = Path.Combine(_hostingEnvironment.ContentRootPath, relativeImagePath);
-                    var oldImagePath = Path.Combine(_hostingEnvironment.ContentRootPath, "material", existingProduct.ImageFileName);
-                    if (System.IO.File.Exists(oldImagePath))
-                    {
-                        System.IO.File.Delete(oldImagePath);
-                    }
-                    using (var fileStream = new FileStream(imagePath, FileMode.Create))
-                    {
-                        await image.CopyToAsync(fileStream);
-                    }
-                    existingProduct.ImageFileName = fileName;
-                }
-                _dbRepository.ReplaceOne(existingProduct);
-                _logger.LogInformation($"Product with ID {id} has been updated successfully");
+                    ImageFileName = fileName,
+                    category = category,
+                    name = name,
+                    IsDeleted = true // Устанавливаем значение IsDeleted в true
+                };
+                _dbRepository.InsertOne(product);
+                _logger.LogInformation($"Продукт '{name}' с изображением был добавлен в категорию: {category}");
                 return Ok();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error while updating product with ID {id}");
-                return StatusCode(500, $"Server error: {ex.Message}");
+                _logger.LogError(ex, "Произошла ошибка при добавлении продукта с изображением");
+                return StatusCode(500, $"Произошла ошибка: {ex.Message}");
             }
         }
     }
