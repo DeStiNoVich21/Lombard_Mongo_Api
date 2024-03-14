@@ -17,13 +17,13 @@ namespace Lombard_Mongo_Api.Controllers
     [Authorize] 
     public class LombardController : ControllerBase
     {
-        private readonly IMongoRepository<Lombards> _dbRepository;
+        private readonly IMongoRepository<Lombards> _LombardsRepository;
         private readonly IConfiguration _configuration;
         private readonly ILogger<LombardController> _logger;
         public LombardController(IConfiguration configuration, IMongoRepository<Lombards> dbRepository, ILogger<LombardController> logger)
         {
             _configuration = configuration;
-            _dbRepository = dbRepository;
+            _LombardsRepository = dbRepository;
             _logger = logger;
         }
         [HttpPost("addLombard")]
@@ -31,10 +31,7 @@ namespace Lombard_Mongo_Api.Controllers
         {
             try
             {
-                if (!User.Identity.IsAuthenticated)
-                {
-                    return Unauthorized("User is not authenticated");
-                }
+               
                 string lombardName = "LombNet." + addLombard.address;
                 Lombards lombard = new Lombards
                 {
@@ -43,7 +40,7 @@ namespace Lombard_Mongo_Api.Controllers
                     number = addLombard.number,
                     description = addLombard.description
                 };
-                _dbRepository.InsertOne(lombard);
+                _LombardsRepository.InsertOne(lombard);
                 _logger.LogInformation($"Lombard has been added: {lombard.lombard_name}");
                 return Ok();
             }
@@ -58,11 +55,8 @@ namespace Lombard_Mongo_Api.Controllers
         {
             try
             {
-                if (!User.Identity.IsAuthenticated)
-                {
-                    return Unauthorized("User is not authenticated");
-                }
-                var lombards = _dbRepository.AsQueryable().ToList();
+                
+                var lombards = _LombardsRepository.AsQueryable().ToList();
                 var lombardDtos = new List<pointLombardDto>();
                 foreach (var lombard in lombards)
                 {
@@ -91,11 +85,8 @@ namespace Lombard_Mongo_Api.Controllers
         {
             try
             {
-                if (!User.Identity.IsAuthenticated)
-                {
-                    return Unauthorized("User is not authenticated");
-                }
-                Lombards lombard = await _dbRepository.FindById(id);
+               
+                Lombards lombard = await _LombardsRepository.FindById(id);
                 if (lombard == null)
                 {
                     return NotFound();
@@ -122,16 +113,13 @@ namespace Lombard_Mongo_Api.Controllers
         {
             try
             {
-                if (!User.Identity.IsAuthenticated)
-                {
-                    return Unauthorized("User is not authenticated");
-                }
-                Lombards lombard = await _dbRepository.FindById(id);
+                
+                Lombards lombard = await _LombardsRepository.FindById(id);
                 if (lombard == null)
                 {
                     return NotFound();
                 }
-                _dbRepository.DeleteById(id);
+                _LombardsRepository.DeleteById(id);
                 _logger.LogInformation($"Lombard has been removed: {id}");
                 return NoContent();
             }

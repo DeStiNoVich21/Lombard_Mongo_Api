@@ -20,7 +20,7 @@ namespace Lombard_Mongo_Api.Controllers
     public class UsersController : ControllerBase
     {
         private readonly IWebHostEnvironment _hostingEnvironment;
-        private readonly IMongoRepository<Users> _dbRepository;
+        private readonly IMongoRepository<Users> _UserRepository;
         private readonly IMongoRepository<Lombards> _LombardRepository;
         private readonly IConfiguration _configuration;
         private readonly ILogger<Fuji> _logger;
@@ -29,7 +29,7 @@ namespace Lombard_Mongo_Api.Controllers
         public UsersController(IConfiguration configuration, IMongoRepository<Users> dbRepository, ILogger<Fuji> logger, IUserService userRepository,IMongoRepository<Lombards> lombardsrepository, IHttpContextAccessor httpContextAccessor)
         {
             _configuration = configuration;
-            _dbRepository = dbRepository;
+            _UserRepository = dbRepository;
             _logger = logger;
             _userService = userRepository;
             _LombardRepository = lombardsrepository;
@@ -40,7 +40,7 @@ namespace Lombard_Mongo_Api.Controllers
         {
             try 
             {
-                var user = await _dbRepository.FindById(id);
+                var user = await _UserRepository.FindById(id);
                 if (user != null)
                 {
                     return Ok(user);
@@ -60,7 +60,7 @@ namespace Lombard_Mongo_Api.Controllers
         {
             try 
             {
-                var user = await _dbRepository.FindById(id);
+                var user = await _UserRepository.FindById(id);
                 var userinfo = new UsersGetInfoDto()
                 {
                     username = user.username,
@@ -83,7 +83,7 @@ namespace Lombard_Mongo_Api.Controllers
                 // Подготовьте лямбда-выражение для фильтрации
                 Expression<Func<Users, bool>> filterExpression = u => u.username == obj.username;
                 // Вызовите метод FindOne с этим фильтром
-                var user = await _dbRepository.FindOne(filterExpression);
+                var user = await _UserRepository.FindOne(filterExpression);
                 if (user != null)
                 {
                     return BadRequest("This username already exist, please choose another one");
@@ -107,7 +107,7 @@ namespace Lombard_Mongo_Api.Controllers
                         number = obj.number,
                         _idLombard = obj._idLombard
                     };
-                    _dbRepository.InsertOne(users);
+                    _UserRepository.InsertOne(users);
                     return Ok();
                 }
             }
@@ -124,7 +124,7 @@ namespace Lombard_Mongo_Api.Controllers
 
                 var user = _contextAccessor.HttpContext.User;
                 var userId = user.Claims.FirstOrDefault(c => c.Type == "UserId");
-                var transac = _dbRepository.FindById(id);
+                var transac = _UserRepository.FindById(id);
                 if (transac != null)
                 {
 
@@ -139,7 +139,7 @@ namespace Lombard_Mongo_Api.Controllers
                         number = Dto.number,
                         _idLombard = transac.Result._idLombard
                     };
-                    _dbRepository.ReplaceOne(transaction);
+                    _UserRepository.ReplaceOne(transaction);
                     return Ok();
                 }
                 else
@@ -153,7 +153,7 @@ namespace Lombard_Mongo_Api.Controllers
                 return BadRequest(ex.Message);
             }
         }
-        [HttpPut]
+        [HttpPut("UpdateUser")]
         public async Task<ActionResult> UpdateUser(string id, ModUpdateDto Dto)
         {
             try
@@ -161,7 +161,7 @@ namespace Lombard_Mongo_Api.Controllers
 
                 var user = _contextAccessor.HttpContext.User;
                 var userId = user.Claims.FirstOrDefault(c => c.Type == "UserId");
-                var transac = _dbRepository.FindById(id);
+                var transac = _UserRepository.FindById(id);
                 if (transac != null)
                 {
 
@@ -176,7 +176,7 @@ namespace Lombard_Mongo_Api.Controllers
                         number = Dto.number,
                         _idLombard = null
                     };
-                    _dbRepository.ReplaceOne(transaction);
+                    _UserRepository.ReplaceOne(transaction);
                     return Ok();
                 }
                 else
@@ -191,15 +191,15 @@ namespace Lombard_Mongo_Api.Controllers
             }
         }
 
-        [HttpDelete]
+        [HttpDelete("DeleteTheUser")]
         public async Task<ActionResult> DeleteTheUser(string id)
         {
             try
             {
-                var user = _dbRepository.FindById(id);
+                var user = _UserRepository.FindById(id);
                 if(user != null)
                 {
-                    _dbRepository.DeleteById(id);
+                    _UserRepository.DeleteById(id);
                     return Ok();
                 }
                 else

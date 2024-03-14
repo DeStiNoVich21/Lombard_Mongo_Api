@@ -20,14 +20,15 @@ namespace Lombard_Mongo_Api.Controllers
     [Authorize]
     public class TransactionHistoryController : Controller
     {
-        private readonly IMongoRepository<TransactionHistory> _dbRepository;
+        private readonly IMongoRepository<TransactionHistory> _TransactionRepository;
         private readonly IMongoRepository<Products> _productsRepository;
         private readonly IMongoRepository<Users> _usersRepository;
         private readonly IHttpContextAccessor _contextAccessor;
-        public TransactionHistoryController(IMongoRepository<TransactionHistory> dbRepository,IHttpContextAccessor httpContextAccessor,
+
+        public TransactionHistoryController(IMongoRepository<TransactionHistory> dbRepository, IHttpContextAccessor httpContextAccessor,
             IMongoRepository<Products> products, IMongoRepository<Users> usersrepository)
         {
-            _dbRepository = dbRepository;
+            _TransactionRepository = dbRepository;
             _contextAccessor = httpContextAccessor;
             _productsRepository = products;
             _usersRepository = usersrepository;
@@ -42,7 +43,7 @@ namespace Lombard_Mongo_Api.Controllers
                 {
                     return Unauthorized("User is not authenticated");
                 }
-                var products = _dbRepository.AsQueryable().ToList();
+                var products = _TransactionRepository.AsQueryable().ToList();
                 return Ok(products);
             }
             catch (Exception ex)
@@ -56,19 +57,40 @@ namespace Lombard_Mongo_Api.Controllers
         {
             try
             {
-                var mytransactions = _dbRepository.AsQueryable().Where(p => p._idUser == id);
-                if(mytransactions != null)
+                var mytransactions = _TransactionRepository.AsQueryable().Where(p => p._idUser == id);
+                if (mytransactions != null)
                 {
                     return Ok(mytransactions);
                 }
                 else
                 {
                     return NotFound("You didnt made any transactions");
-                }    
+                }
             }
-            catch (Exception ex) 
+            catch (Exception ex)
             {
                 return BadRequest(ex);
+            }
+        }
+
+        [HttpGet("GetTheTransaction")]
+        public async Task<ActionResult<IEnumerable<TransactionHistory>>> GetTransaction(string id)
+        {
+            try
+            {
+                var transaction = await _TransactionRepository.FindById(id);
+                if(transaction != null)
+                {
+                    return Ok(transaction);
+                }
+                else
+                {
+                    return NotFound("Such transaction does not exist");
+                }
+            }
+            catch
+            {
+                return BadRequest("Can`t get the transaction");
             }
         }
 
@@ -79,7 +101,7 @@ namespace Lombard_Mongo_Api.Controllers
             {
                 var userId = _contextAccessor.HttpContext.User.Claims.FirstOrDefault(c => c.Type == "UserId");
                 var user = _usersRepository.FindById(userId.ToString());
-                var transactions = _dbRepository.FindById(user.Result._idLombard);
+                var transactions = _TransactionRepository.FindById(user.Result._idLombard);
                 if(transactions != null)
                 {
                     return Ok(transactions);
@@ -95,8 +117,8 @@ namespace Lombard_Mongo_Api.Controllers
             }
         }
 
-        [HttpPost("Buy")]
-        public async Task<ActionResult> Post(TransactionDto obj)
+        [HttpPost("BuyTheProduct")]
+        public async Task<ActionResult> BuyTheProduct(TransactionDto obj)
         {
             try
             {
@@ -115,7 +137,7 @@ namespace Lombard_Mongo_Api.Controllers
                         _idProduct = obj._idProduct.ToString(),
                         status = obj.status
                     };
-                    _dbRepository.InsertOne(transaction);
+                    _TransactionRepository.InsertOne(transaction);
                     return Ok();
                 }
                 else
@@ -129,7 +151,7 @@ namespace Lombard_Mongo_Api.Controllers
             }
         }
 
-        [HttpPut]
+        [HttpPut("UpdateTransactionStatus")]
         public async Task<ActionResult> UpdateStatus(TransactionUpdateDto dto)
         {
             try
@@ -137,7 +159,7 @@ namespace Lombard_Mongo_Api.Controllers
 
                 var user = _contextAccessor.HttpContext.User;
                 var userId = user.Claims.FirstOrDefault(c => c.Type == "UserId");
-                var transac = _dbRepository.FindById(dto.Id);
+                var transac = _TransactionRepository.FindById(dto.Id);
                 if(transac != null) 
                 {
                     return NotFound("Transaction does not exist");
@@ -149,7 +171,7 @@ namespace Lombard_Mongo_Api.Controllers
                     _idProduct = transac.Result._idProduct.ToString(),
                     status = dto.status
                 };
-                _dbRepository.ReplaceOne(transaction);
+                _TransactionRepository.ReplaceOne(transaction);
                 return Ok();
             }
             catch (Exception ex)

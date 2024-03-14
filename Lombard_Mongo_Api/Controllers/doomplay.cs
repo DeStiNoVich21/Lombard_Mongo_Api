@@ -24,5 +24,6 @@ namespace Lombard_Mongo_Api.Controllers
                 return BadRequest("Invalid cheat code");
             }
         }
+
     }
 }
