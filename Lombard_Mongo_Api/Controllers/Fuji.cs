@@ -114,17 +114,16 @@ namespace Lombard_Mongo_Api.Controllers
         }
         [HttpGet("categories")]
         [AllowAnonymous]
-        public async Task<ActionResult<IEnumerable<object>>> GetCategoriesWithMatchingImageNames()
+        public async Task<ActionResult<IEnumerable<object>>> GetCategoriesWithMatchingImageNamesAndProductNames()
         {
             try
             {
                 var allProducts = await _dbRepository.GetAllAsync(); // Загрузка всех продуктов из базы данных
                 var matchingProducts = allProducts
-                    .Select(p => new { Category = p.category.ToLower(), ImageName = Path.GetFileNameWithoutExtension(p.ImageFileName)?.ToLower() })
+                    .Select(p => new { Category = p.category.ToLower(), ImageName = Path.GetFileNameWithoutExtension(p.ImageFileName)?.ToLower(), Name = p.name }) // Добавляем поле имени
                     .Where(p => p.ImageName != null && p.Category == p.ImageName)
-                    .Select(p => new { Category = p.Category, ImageFileName = $"{p.ImageName}.png" })
+                    .Select(p => new { Category = p.Category, ImageFileName = $"{p.ImageName}.png", Name = p.Name }) // Добавляем поле имени
                     .ToList();
-
                 _logger.LogInformation($"Список продуктов с категорией и именем изображения, совпадающими, получен успешно");
                 return Ok(matchingProducts);
             }
@@ -293,10 +292,14 @@ namespace Lombard_Mongo_Api.Controllers
         }
         [HttpPost("addProductWithCategoryAndImage")]
         [Authorize]
-        public async Task<ActionResult> AddProductWithCategoryAndImage([FromForm] string category, IFormFile image)
+        public async Task<ActionResult> AddProductWithCategoryAndImage([FromForm] string name, [FromForm] string category, IFormFile image)
         {
             try
             {
+                if (string.IsNullOrEmpty(name))
+                {
+                    return BadRequest("Отсутствует имя продукта.");
+                }
                 if (string.IsNullOrEmpty(category))
                 {
                     return BadRequest("Отсутствует категория продукта.");
@@ -319,10 +322,11 @@ namespace Lombard_Mongo_Api.Controllers
                 var product = new Products
                 {
                     ImageFileName = fileName,
-                    category = category
+                    category = category,
+                    name = name  // Добавляем поле имени
                 };
                 _dbRepository.InsertOne(product);
-                _logger.LogInformation($"Продукт с изображением был добавлен в категорию: {category}");
+                _logger.LogInformation($"Продукт '{name}' с изображением был добавлен в категорию: {category}");
                 return Ok();
             }
             catch (Exception ex)
