@@ -114,18 +114,24 @@ namespace Lombard_Mongo_Api.Controllers
         }
         [HttpGet("categories")]
         [AllowAnonymous]
-        public async Task<ActionResult<IEnumerable<string>>> GetUniqueCategories()
+        public async Task<ActionResult<IEnumerable<object>>> GetCategoriesWithMatchingImageNames()
         {
             try
             {
-                var uniqueCategories = _dbRepository.AsQueryable().Select(p => p.category).Distinct().ToList();
-                _logger.LogInformation($"Unique categories retrieved");
-                return Ok(uniqueCategories);
+                var allProducts = await _dbRepository.GetAllAsync(); // Загрузка всех продуктов из базы данных
+                var matchingProducts = allProducts
+                    .Select(p => new { Category = p.category.ToLower(), ImageName = Path.GetFileNameWithoutExtension(p.ImageFileName)?.ToLower() })
+                    .Where(p => p.ImageName != null && p.Category == p.ImageName)
+                    .Select(p => new { Category = p.Category, ImageFileName = $"{p.ImageName}.png" })
+                    .ToList();
+
+                _logger.LogInformation($"Список продуктов с категорией и именем изображения, совпадающими, получен успешно");
+                return Ok(matchingProducts);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error while retrieving unique categories");
-                return StatusCode(500, $"Server error: {ex.Message}");
+                _logger.LogError(ex, $"Ошибка при получении списка продуктов с одинаковой категорией и именем изображения");
+                return StatusCode(500, $"Ошибка сервера: {ex.Message}");
             }
         }
         [HttpGet("products/category/{category}")]
@@ -303,7 +309,7 @@ namespace Lombard_Mongo_Api.Controllers
                 {
                     return Unauthorized("Пользователь не авторизован");
                 }
-                string fileName = $"{category.ToLower().Replace(" ", "")}name.png";
+                string fileName = $"{category.ToLower().Replace(" ", "")}.png";
                 string relativeImagePath = Path.Combine("material", fileName);
                 string imagePath = Path.Combine(_hostingEnvironment.ContentRootPath, relativeImagePath);
                 using (var fileStream = new FileStream(imagePath, FileMode.Create))

@@ -15,5 +15,6 @@ namespace Lombard_Mongo_Api.MongoRepository.GenericRepository
         void DeleteMany(Expression<Func<TDocument, bool>> filterExpression);
         Task GetByIdAsync(string id);
         Task<List<TDocument>> FindAsync(FilterDefinition<TDocument> filter);
+        Task<List<TDocument>> GetAllAsync();
     }
 }

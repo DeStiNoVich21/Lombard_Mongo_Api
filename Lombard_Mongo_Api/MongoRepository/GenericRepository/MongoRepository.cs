@@ -186,5 +186,16 @@ namespace Lombard_Mongo_Api.MongoRepository.GenericRepository
                 throw new Exception($"Error while finding documents: {ex.Message}", ex);
             }
         }
+        public async Task<List<TDocument>> GetAllAsync()
+        {
+            try
+            {
+                return await _collection.Find(_ => true).ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error while getting all documents: {ex.Message}", ex);
+            }
+        }
     }
 }
