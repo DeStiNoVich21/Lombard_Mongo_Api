@@ -15,6 +15,5 @@ namespace Lombard_Mongo_Api.Models.Dtos
         public string name { get; set; } = string.Empty;
         public string address { get; set; } = string.Empty;
         public string number { get; set; } = string.Empty;
-        public string description { get; set; } = string.Empty;
     }
 }

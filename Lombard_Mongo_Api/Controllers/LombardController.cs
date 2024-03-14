@@ -37,8 +37,7 @@ namespace Lombard_Mongo_Api.Controllers
                 {
                     lombard_name = lombardName,
                     address = addLombard.address,
-                    number = addLombard.number,
-                    description = addLombard.description
+                    number = addLombard.number
                 };
                 _LombardsRepository.InsertOne(lombard);
                 _logger.LogInformation($"Lombard has been added: {lombard.lombard_name}");
@@ -46,36 +45,6 @@ namespace Lombard_Mongo_Api.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "An error occurred while adding Lombard");
-                return StatusCode(500, $"An error has occurred: {ex.Message}");
-            }
-        }
-        [HttpGet]
-        public async Task<IActionResult> GetAllLombards()
-        {
-            try
-            {
-                
-                var lombards = _LombardsRepository.AsQueryable().ToList();
-                var lombardDtos = new List<pointLombardDto>();
-                foreach (var lombard in lombards)
-                {
-                    var lombardDto = new pointLombardDto
-                    {
-                        Id = lombard.Id,
-                        name = lombard.lombard_name,
-                        address = lombard.address,
-                        number = lombard.number,
-                        description = lombard.description
-                    };
-                    lombardDtos.Add(lombardDto);
-                }
-                _logger.LogInformation($"Lombard's listing has been retrieved.");
-                return Ok(lombardDtos);
-            }
-            catch (Exception ex)
-            {
-            
                 _logger.LogError(ex, "An error occurred while adding Lombard");
                 return StatusCode(500, $"An error has occurred: {ex.Message}");
             }
@@ -96,8 +65,7 @@ namespace Lombard_Mongo_Api.Controllers
                     Id = lombard.Id,
                     name = lombard.lombard_name,
                     address = lombard.address,
-                    number = lombard.number,
-                    description = lombard.description
+                    number = lombard.number
                 };
                 _logger.LogInformation($"Lombard Retrieved: {lombardDto.name}");
                 return Ok(lombardDto);
@@ -113,19 +81,74 @@ namespace Lombard_Mongo_Api.Controllers
         {
             try
             {
-                
                 Lombards lombard = await _LombardsRepository.FindById(id);
                 if (lombard == null)
                 {
                     return NotFound();
                 }
-                _LombardsRepository.DeleteById(id);
-                _logger.LogInformation($"Lombard has been removed: {id}");
+                lombard.deleted = true; // Устанавливаем флаг удаления
+                _LombardsRepository.ReplaceOne(lombard); // Заменяем документ в БД
+
+                _logger.LogInformation($"Lombard has been soft deleted: {id}");
                 return NoContent();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "An error occurred while adding Lombard");
+                _logger.LogError(ex, "An error occurred while soft deleting Lombard");
+                return StatusCode(500, $"An error has occurred: {ex.Message}");
+            }
+        }
+        [HttpGet("deleted")]
+        public async Task<IActionResult> GetDeletedLombards()
+        {
+            try
+            {
+                var deletedLombards = _LombardsRepository.AsQueryable().Where(l => l.deleted).ToList();
+                var deletedLombardDtos = new List<pointLombardDto>();
+                foreach (var deletedLombard in deletedLombards)
+                {
+                    var deletedLombardDto = new pointLombardDto
+                    {
+                        Id = deletedLombard.Id,
+                        name = deletedLombard.lombard_name,
+                        address = deletedLombard.address,
+                        number = deletedLombard.number
+                    };
+                    deletedLombardDtos.Add(deletedLombardDto);
+                }
+                _logger.LogInformation($"Deleted Lombard's listing has been retrieved.");
+                return Ok(deletedLombardDtos);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while retrieving deleted Lombards");
+                return StatusCode(500, $"An error has occurred: {ex.Message}");
+            }
+        }
+        [HttpGet("active")]
+        public async Task<IActionResult> GetActiveLombards()
+        {
+            try
+            {
+                var lombards = _LombardsRepository.AsQueryable().Where(l => !l.deleted).ToList();
+                var lombardDtos = new List<pointLombardDto>();
+                foreach (var lombard in lombards)
+                {
+                    var lombardDto = new pointLombardDto
+                    {
+                        Id = lombard.Id,
+                        name = lombard.lombard_name,
+                        address = lombard.address,
+                        number = lombard.number
+                    };
+                    lombardDtos.Add(lombardDto);
+                }
+                _logger.LogInformation($"Active Lombard's listing has been retrieved.");
+                return Ok(lombardDtos);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while retrieving active Lombards");
                 return StatusCode(500, $"An error has occurred: {ex.Message}");
             }
         }
