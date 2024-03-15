@@ -258,7 +258,7 @@ namespace Lombard_Mongo_Api.Controllers
         }
         [HttpGet("products/filter")]
         [AllowAnonymous]
-        public async Task<ActionResult<IEnumerable<Products>>> GetFilteredProducts(string brand = null, int? minPrice = null, int? maxPrice = null, string category = null)
+        public async Task<ActionResult<IEnumerable<Products>>> GetFilteredProducts(string category = null, string brand = null, int? minPrice = null, int? maxPrice = null)
         {
             try
             {
@@ -271,13 +271,10 @@ namespace Lombard_Mongo_Api.Controllers
                 {
                     return BadRequest("Максимальная цена не может быть отрицательной.");
                 }
-
-                // Добавляем обработку исключения, если категория не была передана
                 if (category == null)
                 {
                     return BadRequest("Категория не указана.");
                 }
-
                 var categoryProductsResponse = await GetProductsByCategory(category);
                 if (categoryProductsResponse == null || categoryProductsResponse.Result == null)
                 {
