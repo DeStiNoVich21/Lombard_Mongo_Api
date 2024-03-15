@@ -32,12 +32,15 @@ namespace Lombard_Mongo_Api.Controllers
             try
             {
                
-                string lombardName = "LombNet." + addLombard.address;
+               
                 Lombards lombard = new Lombards
                 {
-                    lombard_name = lombardName,
+                    Id = "",
+                    lombard_name = addLombard.name,
                     address = addLombard.address,
-                    number = addLombard.number
+                    number = addLombard.number,
+                    deleted = false
+                    
                 };
                 _LombardsRepository.InsertOne(lombard);
                 _logger.LogInformation($"Lombard has been added: {lombard.lombard_name}");
@@ -60,15 +63,9 @@ namespace Lombard_Mongo_Api.Controllers
                 {
                     return NotFound();
                 }
-                var lombardDto = new pointLombardDto
-                {
-                    Id = lombard.Id,
-                    name = lombard.lombard_name,
-                    address = lombard.address,
-                    number = lombard.number
-                };
-                _logger.LogInformation($"Lombard Retrieved: {lombardDto.name}");
-                return Ok(lombardDto);
+                
+                _logger.LogInformation($"Lombard Retrieved: {lombard.lombard_name}");
+                return Ok(lombard);
             }
             catch (Exception ex)
             {
@@ -103,21 +100,11 @@ namespace Lombard_Mongo_Api.Controllers
         {
             try
             {
-                var deletedLombards = _LombardsRepository.AsQueryable().Where(l => l.deleted).ToList();
-                var deletedLombardDtos = new List<pointLombardDto>();
-                foreach (var deletedLombard in deletedLombards)
-                {
-                    var deletedLombardDto = new pointLombardDto
-                    {
-                        Id = deletedLombard.Id,
-                        name = deletedLombard.lombard_name,
-                        address = deletedLombard.address,
-                        number = deletedLombard.number
-                    };
-                    deletedLombardDtos.Add(deletedLombardDto);
-                }
+                var deletedLombards = _LombardsRepository.AsQueryable().Where(l => l.deleted == true).ToList();
+               
+                
                 _logger.LogInformation($"Deleted Lombard's listing has been retrieved.");
-                return Ok(deletedLombardDtos);
+                return Ok(deletedLombards);
             }
             catch (Exception ex)
             {
@@ -130,21 +117,11 @@ namespace Lombard_Mongo_Api.Controllers
         {
             try
             {
-                var lombards = _LombardsRepository.AsQueryable().Where(l => !l.deleted).ToList();
-                var lombardDtos = new List<pointLombardDto>();
-                foreach (var lombard in lombards)
-                {
-                    var lombardDto = new pointLombardDto
-                    {
-                        Id = lombard.Id,
-                        name = lombard.lombard_name,
-                        address = lombard.address,
-                        number = lombard.number
-                    };
-                    lombardDtos.Add(lombardDto);
-                }
+                var lombards = _LombardsRepository.AsQueryable().Where(l => l.deleted==false).ToList();
+     
+              
                 _logger.LogInformation($"Active Lombard's listing has been retrieved.");
-                return Ok(lombardDtos);
+                return Ok(lombards);
             }
             catch (Exception ex)
             {

@@ -11,7 +11,7 @@ namespace Lombard_Mongo_Api.Models.Dtos
 {
     public class pointLombardDto
     {
-        public string Id { get; set; }
+       
         public string name { get; set; } = string.Empty;
         public string address { get; set; } = string.Empty;
         public string number { get; set; } = string.Empty;
