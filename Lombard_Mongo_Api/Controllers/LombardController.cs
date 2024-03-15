@@ -26,13 +26,36 @@ namespace Lombard_Mongo_Api.Controllers
             _LombardsRepository = dbRepository;
             _logger = logger;
         }
+
+        [HttpGet("GetAll")]
+        public async Task<ActionResult> GetAllLombards()
+        {
+            try
+            {
+
+                var user = _LombardsRepository.AsQueryable().ToList();
+                
+                return Ok(user);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while adding Lombard");
+                return StatusCode(500, $"An error has occurred: {ex.Message}");
+            }
+        }
+
+
         [HttpPost("addLombard")]
         public async Task<ActionResult> AddLombard(pointLombardDto addLombard)
         {
             try
             {
-               
-               
+
+                var user = await _LombardsRepository.FindOne(p=> p.lombard_name == addLombard.name);
+                if (user != null)
+                {
+                    return BadRequest("This username already exist, please choose another one");
+                }
                 Lombards lombard = new Lombards
                 {
                     Id = "",
@@ -73,6 +96,27 @@ namespace Lombard_Mongo_Api.Controllers
                 return StatusCode(500, $"An error has occurred: {ex.Message}");
             }
         }
+        [HttpGet("Name")]
+        public async Task<IActionResult> GetLombardByName(string name)
+        {
+            try
+            {
+
+                Lombards lombard = await _LombardsRepository.FindOne(p => p.lombard_name ==name);
+                if (lombard == null)
+                {
+                    return NotFound();
+                }
+
+                _logger.LogInformation($"Lombard Retrieved: {lombard.lombard_name}");
+                return Ok(lombard);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while adding Lombard");
+                return StatusCode(500, $"An error has occurred: {ex.Message}");
+            }
+        }
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteLombardById(string id)
         {
@@ -95,6 +139,30 @@ namespace Lombard_Mongo_Api.Controllers
                 return StatusCode(500, $"An error has occurred: {ex.Message}");
             }
         }
+
+        [HttpDelete("Name")]
+        public async Task<IActionResult> DeleteLombardByName(string name)
+        {
+            try
+            {
+                Lombards lombard = await _LombardsRepository.FindOne(p => p.lombard_name == name);
+                if (lombard == null)
+                {
+                    return NotFound();
+                }
+                lombard.deleted = true; // Устанавливаем флаг удаления
+                _LombardsRepository.ReplaceOne(lombard); // Заменяем документ в БД
+
+                _logger.LogInformation($"Lombard has been soft deleted: {name}");
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while soft deleting Lombard");
+                return StatusCode(500, $"An error has occurred: {ex.Message}");
+            }
+        }
+
         [HttpGet("deleted")]
         public async Task<IActionResult> GetDeletedLombards()
         {
