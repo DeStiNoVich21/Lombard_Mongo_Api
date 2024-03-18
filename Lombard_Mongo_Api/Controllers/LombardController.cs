@@ -52,10 +52,10 @@ namespace Lombard_Mongo_Api.Controllers
             try
             {
                 // Получаем идентификатор пользователя из токена аутентификации
-                string userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                string userId = HttpContext.User.FindFirst("UserId")?.Value;
                 if (userId == null)
                 {
-                    return Unauthorized(); // Если идентификатор пользователя не найден, возвращаем 401 Unauthorized
+                    return Unauthorized(); // Если идентификатор пользователя не найден в токене, возвращаем 401 Unauthorized
                 }
                 // Ищем пользователя по его идентификатору
                 var user = await _UserRepository.FindById(userId);
@@ -68,7 +68,6 @@ namespace Lombard_Mongo_Api.Controllers
                 {
                     return BadRequest("User already has a lombard"); // Если пользователь уже имеет ломбард, возвращаем 400 BadRequest
                 }
-
                 // Создаем новый ломбард
                 Lombards lombard = new Lombards
                 {
@@ -80,11 +79,9 @@ namespace Lombard_Mongo_Api.Controllers
                 };
                 _LombardsRepository.InsertOne(lombard);
                 _logger.LogInformation($"Lombard has been added: {lombard.lombard_name}");
-
                 // Присваиваем id ломбарда пользователю и сохраняем изменения в БД
                 user._idLombard = lombard.Id;
                 _UserRepository.ReplaceOne(user);
-
                 return Ok();
             }
             catch (Exception ex)
@@ -93,7 +90,6 @@ namespace Lombard_Mongo_Api.Controllers
                 return StatusCode(500, $"An error has occurred: {ex.Message}");
             }
         }
-
         [HttpGet("{id}")]
         public async Task<IActionResult> GetLombardById(string id)
         {
