@@ -31,16 +31,29 @@ namespace Lombard_Mongo_Api.Controllers
             _hostingEnvironment = hostingEnvironment;
             _UserRepository = UserRepository;
         }
-        public async Task<Users> FindUserById(string userId)
+        [HttpGet("user")]
+        [Authorize]
+        public async Task<ActionResult<Users>> FindUserByIdFromToken()
         {
             try
             {
-                return await _UserRepository.FindById(userId);
+                // Получаем идентификатор пользователя из токена
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userId))
+                    return Unauthorized("Невозможно получить идентификатор пользователя из токена аутентификации.");
+
+                // Ищем пользователя по его идентификатору
+                var user = await _UserRepository.FindById(userId);
+                if (user == null)
+                    return NotFound($"Пользователь с ID {userId} не найден.");
+
+                // Возвращаем пользователя
+                return user;
             }
             catch (Exception ex)
             {
-                // Обработайте ошибку поиска пользователя
-                throw new Exception($"Error finding user with ID {userId}", ex);
+                // Обрабатываем ошибку при поиске пользователя
+                throw new Exception("Ошибка при поиске пользователя", ex);
             }
         }
         [HttpPost("addProduct")]
@@ -54,30 +67,34 @@ namespace Lombard_Mongo_Api.Controllers
                     return BadRequest("Отсутствуют данные о продукте.");
                 if (image == null || image.Length == 0)
                     return BadRequest("Требуется файл изображения.");
-                // Проверяем, аутентифицирован ли пользователь
-                if (!User.Identity.IsAuthenticated)
-                    return Unauthorized("Пользователь не авторизован");
+
                 // Получаем идентификатор пользователя из токена
                 var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (string.IsNullOrEmpty(userId))
                     return Unauthorized("Невозможно получить идентификатор пользователя из токена.");
+
                 // Ищем пользователя по его идентификатору
-                var user = await FindUserById(userId);
+                var user = await _UserRepository.FindById(userId);
                 if (user == null)
                     return NotFound($"Пользователь с ID {userId} не найден.");
+
                 // Устанавливаем значение _idLombard в продукт из найденного пользователя
                 productDto._idLombard = user._idLombard;
+
                 // Создаем уникальное имя файла для изображения
                 string fileName = $"{Guid.NewGuid()}{Path.GetExtension(image.FileName)}";
                 string relativeImagePath = Path.Combine("material", fileName);
                 string imagePath = Path.Combine(_hostingEnvironment.ContentRootPath, relativeImagePath);
+
                 // Сохраняем изображение на сервере
                 using (var fileStream = new FileStream(imagePath, FileMode.Create))
                 {
                     await image.CopyToAsync(fileStream);
                 }
+
                 // Устанавливаем статус продукта
                 productDto.status = Enums.revengeancestatus.In_stock.ToString();
+
                 // Создаем новый продукт
                 var product = new Products
                 {
@@ -88,13 +105,16 @@ namespace Lombard_Mongo_Api.Controllers
                     price = productDto.price,
                     status = productDto.status,
                     IsDeleted = productDto.IsDeleted,
-                    Brand = productDto.brand,  // Добавляем поле бренд
-                    _idLombard = productDto._idLombard // Устанавливаем _idLombard
+                    Brand = productDto.brand,
+                    _idLombard = productDto._idLombard
                 };
+
                 // Добавляем продукт в базу данных
                 _dbRepository.InsertOne(product);
+
                 // Логируем информацию о добавлении продукта
                 _logger.LogInformation($"Продукт был добавлен: {product.name}");
+
                 // Возвращаем успешный результат
                 return Ok();
             }
