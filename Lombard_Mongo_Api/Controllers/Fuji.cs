@@ -266,7 +266,7 @@ namespace Lombard_Mongo_Api.Controllers
         }
         [HttpGet("products/filter")]
         [AllowAnonymous]
-        public async Task<ActionResult<IEnumerable<Products>>> GetFilteredProducts(string category = null, string brand = null, int? minPrice = null, int? maxPrice = null)
+        public async Task<ActionResult<IEnumerable<Products>>> GetFilteredProducts(string category = null, string brands = null, int? minPrice = null, int? maxPrice = null, string idLombard = null)
         {
             try
             {
@@ -274,42 +274,35 @@ namespace Lombard_Mongo_Api.Controllers
                 {
                     return BadRequest("Минимальная цена не может быть отрицательной.");
                 }
-
                 if (maxPrice.HasValue && maxPrice < 0)
                 {
                     return BadRequest("Максимальная цена не может быть отрицательной.");
                 }
-                if (category == null)
+                var productsQuery = _dbRepository.AsQueryable();
+                if (!string.IsNullOrEmpty(category))
                 {
-                    return BadRequest("Категория не указана.");
+                    productsQuery = productsQuery.Where(p => p.category.ToLower() == category.ToLower());
                 }
-                var categoryProductsResponse = await GetProductsByCategory(category);
-                if (categoryProductsResponse == null || categoryProductsResponse.Result == null)
+                if (!string.IsNullOrEmpty(brands))
                 {
-                    return NotFound($"No products found in category: {category}");
+                    var brandList = brands.ToLower().Split(',').Select(b => b.Trim());
+                    productsQuery = productsQuery.Where(p => brandList.Contains(p.Brand.ToLower()));
                 }
+                if (minPrice.HasValue)
+                {
+                    productsQuery = productsQuery.Where(p => p.price >= minPrice.Value);
+                }
+                if (maxPrice.HasValue && maxPrice != 0)
+                {
+                    productsQuery = productsQuery.Where(p => p.price <= maxPrice.Value);
+                }
+                if (!string.IsNullOrEmpty(idLombard))
+                {
+                    productsQuery = productsQuery.Where(p => p._idLombard == idLombard);
+                }
+                var filteredProducts = productsQuery.ToList();
 
-                if (categoryProductsResponse.Result is OkObjectResult okResult && okResult.Value is IEnumerable<Products> categoryProducts)
-                {
-                    var filteredProducts = categoryProducts.Where(p => !p.IsDeleted);
-                    if (!string.IsNullOrEmpty(brand))
-                    {
-                        filteredProducts = filteredProducts.Where(p => p.Brand.ToLower() == brand.ToLower());
-                    }
-                    if (minPrice.HasValue)
-                    {
-                        filteredProducts = filteredProducts.Where(p => p.price >= minPrice.Value);
-                    }
-                    if (maxPrice.HasValue && maxPrice != 0)
-                    {
-                        filteredProducts = filteredProducts.Where(p => p.price <= maxPrice.Value);
-                    }
-                    return Ok(filteredProducts.ToList());
-                }
-                else
-                {
-                    return BadRequest("Failed to retrieve products in category.");
-                }
+                return Ok(filteredProducts);
             }
             catch (ArgumentException ex)
             {
