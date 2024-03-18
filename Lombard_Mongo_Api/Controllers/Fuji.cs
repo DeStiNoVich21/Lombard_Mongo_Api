@@ -31,31 +31,6 @@ namespace Lombard_Mongo_Api.Controllers
             _hostingEnvironment = hostingEnvironment;
             _UserRepository = UserRepository;
         }
-        [HttpGet("user")]
-        [Authorize]
-        public async Task<ActionResult<Users>> FindUserByIdFromToken()
-        {
-            try
-            {
-                // Получаем идентификатор пользователя из токена
-                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userId))
-                    return Unauthorized("Невозможно получить идентификатор пользователя из токена аутентификации.");
-
-                // Ищем пользователя по его идентификатору
-                var user = await _UserRepository.FindById(userId);
-                if (user == null)
-                    return NotFound($"Пользователь с ID {userId} не найден.");
-
-                // Возвращаем пользователя
-                return user;
-            }
-            catch (Exception ex)
-            {
-                // Обрабатываем ошибку при поиске пользователя
-                throw new Exception("Ошибка при поиске пользователя", ex);
-            }
-        }
         [HttpPost("addProduct")]
         [Authorize]
         public async Task<ActionResult> AddProduct([FromForm] ProductsDto productDto, IFormFile image)
@@ -77,9 +52,6 @@ namespace Lombard_Mongo_Api.Controllers
                 var user = await _UserRepository.FindById(userId);
                 if (user == null)
                     return NotFound($"Пользователь с ID {userId} не найден.");
-
-                // Устанавливаем значение _idLombard в продукт из найденного пользователя
-                productDto._idLombard = user._idLombard;
 
                 // Создаем уникальное имя файла для изображения
                 string fileName = $"{Guid.NewGuid()}{Path.GetExtension(image.FileName)}";
@@ -106,7 +78,7 @@ namespace Lombard_Mongo_Api.Controllers
                     status = productDto.status,
                     IsDeleted = productDto.IsDeleted,
                     Brand = productDto.brand,
-                    _idLombard = productDto._idLombard
+                    _idLombard = user._idLombard // Устанавливаем значение идентификатора ломбарда из пользователя
                 };
 
                 // Добавляем продукт в базу данных

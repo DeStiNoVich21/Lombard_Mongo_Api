@@ -11,6 +11,5 @@ namespace Lombard_Mongo_Api.Models.Dtos
         public bool IsDeleted { get; set; }
         // Добавлено свойство brand
         public string brand { get; set; } = string.Empty;
-        public string _idLombard { get; set; } = string.Empty;
     }
 }
