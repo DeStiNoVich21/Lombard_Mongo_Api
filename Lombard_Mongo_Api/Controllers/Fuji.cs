@@ -42,31 +42,25 @@ namespace Lombard_Mongo_Api.Controllers
                     return BadRequest("Отсутствуют данные о продукте.");
                 if (image == null || image.Length == 0)
                     return BadRequest("Требуется файл изображения.");
-
                 // Получаем идентификатор пользователя из токена
-                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                var userId = User.FindFirst("UserId")?.Value;
                 if (string.IsNullOrEmpty(userId))
                     return Unauthorized("Невозможно получить идентификатор пользователя из токена.");
-
                 // Ищем пользователя по его идентификатору
                 var user = await _UserRepository.FindById(userId);
                 if (user == null)
                     return NotFound($"Пользователь с ID {userId} не найден.");
-
                 // Создаем уникальное имя файла для изображения
                 string fileName = $"{Guid.NewGuid()}{Path.GetExtension(image.FileName)}";
                 string relativeImagePath = Path.Combine("material", fileName);
                 string imagePath = Path.Combine(_hostingEnvironment.ContentRootPath, relativeImagePath);
-
                 // Сохраняем изображение на сервере
                 using (var fileStream = new FileStream(imagePath, FileMode.Create))
                 {
                     await image.CopyToAsync(fileStream);
                 }
-
                 // Устанавливаем статус продукта
                 productDto.status = Enums.revengeancestatus.In_stock.ToString();
-
                 // Создаем новый продукт
                 var product = new Products
                 {
@@ -80,13 +74,10 @@ namespace Lombard_Mongo_Api.Controllers
                     Brand = productDto.brand,
                     _idLombard = user._idLombard // Устанавливаем значение идентификатора ломбарда из пользователя
                 };
-
                 // Добавляем продукт в базу данных
                 _dbRepository.InsertOne(product);
-
                 // Логируем информацию о добавлении продукта
                 _logger.LogInformation($"Продукт был добавлен: {product.name}");
-
                 // Возвращаем успешный результат
                 return Ok();
             }
