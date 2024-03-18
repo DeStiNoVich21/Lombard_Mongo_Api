@@ -17,8 +17,6 @@ namespace Lombard_Mongo_Api.Models.Dtos
         [BsonElement("_idProduct")]
         public string _idProduct { get; set; } = string.Empty;
 
-        [BsonElement("Status")]
-        public string status { get; set; } = string.Empty;
 
     }
     public class TransactionUpdateDto
