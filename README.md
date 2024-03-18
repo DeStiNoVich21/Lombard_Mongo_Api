@@ -7,9 +7,9 @@ Features:
 5)Can store Images
 6)Despite the foreign key isn't featured in Mongo DB we made some functions work like its using foreign key  
 
-This is our first team project and we dont have plans upgrading it afterwards , so it's kind like a little reminder of our deeds :)
+This is our first team project and we dont have plans on upgrading it afterwards , so it's kinda like a little reminder of our deeds :)
 
-Short instructions for its functionality:
+Short instructions for it's functionality:
 1)Authorization: It`s allows for login and registration 
   1.1) Login works by creating a jwt token and writes user_id and ClaimTypes.Roles
   1.2) Registration uses password hashing and stores password hash and password salt in DB
