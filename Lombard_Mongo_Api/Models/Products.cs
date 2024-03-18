@@ -27,6 +27,6 @@ namespace Lombard_Mongo_Api.Models
         [BsonElement("isdeleted")]
         public bool IsDeleted { get; set; }
         [BsonElement("lombardId")]
-        public string LombardId { get; set; } = string.Empty;
+        public string _idLombard { get; set; } = string.Empty;
     }
 }

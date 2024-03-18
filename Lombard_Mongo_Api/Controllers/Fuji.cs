@@ -9,9 +9,9 @@ using Microsoft.Extensions.Hosting.Internal;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using System.Linq.Expressions;
+using System.Security.Claims;
 using System.Text.RegularExpressions;
 namespace Lombard_Mongo_Api.Controllers
-
 {
     [Route("api/[controller]")]
     [ApiController]
@@ -20,14 +20,28 @@ namespace Lombard_Mongo_Api.Controllers
     {
         private readonly IWebHostEnvironment _hostingEnvironment;
         private readonly IMongoRepository<Products> _dbRepository;
+        private readonly IMongoRepository<Users> _UserRepository;
         private readonly IConfiguration _configuration;
         private readonly ILogger<Fuji> _logger;
-        public Fuji(IConfiguration configuration, IMongoRepository<Products> dbRepository, ILogger<Fuji> logger, IWebHostEnvironment hostingEnvironment)
+        public Fuji(IConfiguration configuration, IMongoRepository<Products> dbRepository, ILogger<Fuji> logger, IWebHostEnvironment hostingEnvironment, IMongoRepository<Users> UserRepository)
         {
             _configuration = configuration;
             _dbRepository = dbRepository;
             _logger = logger;
             _hostingEnvironment = hostingEnvironment;
+            _UserRepository = UserRepository;
+        }
+        public async Task<Users> FindUserById(string userId)
+        {
+            try
+            {
+                return await _UserRepository.FindById(userId);
+            }
+            catch (Exception ex)
+            {
+                // Обработайте ошибку поиска пользователя
+                throw new Exception($"Error finding user with ID {userId}", ex);
+            }
         }
         [HttpPost("addProduct")]
         [Authorize]
@@ -35,30 +49,36 @@ namespace Lombard_Mongo_Api.Controllers
         {
             try
             {
+                // Проверяем наличие данных о продукте и изображении
                 if (productDto == null)
-                {
                     return BadRequest("Отсутствуют данные о продукте.");
-                }
                 if (image == null || image.Length == 0)
-                {
                     return BadRequest("Требуется файл изображения.");
-                }
+                // Проверяем, аутентифицирован ли пользователь
                 if (!User.Identity.IsAuthenticated)
-                {
                     return Unauthorized("Пользователь не авторизован");
-                }
-                if (productDto.price < 0)
-                {
-                    return BadRequest("Цена не может быть отрицательной.");
-                }
+                // Получаем идентификатор пользователя из токена
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userId))
+                    return Unauthorized("Невозможно получить идентификатор пользователя из токена.");
+                // Ищем пользователя по его идентификатору
+                var user = await FindUserById(userId);
+                if (user == null)
+                    return NotFound($"Пользователь с ID {userId} не найден.");
+                // Устанавливаем значение _idLombard в продукт из найденного пользователя
+                productDto._idLombard = user._idLombard;
+                // Создаем уникальное имя файла для изображения
                 string fileName = $"{Guid.NewGuid()}{Path.GetExtension(image.FileName)}";
                 string relativeImagePath = Path.Combine("material", fileName);
                 string imagePath = Path.Combine(_hostingEnvironment.ContentRootPath, relativeImagePath);
+                // Сохраняем изображение на сервере
                 using (var fileStream = new FileStream(imagePath, FileMode.Create))
                 {
                     await image.CopyToAsync(fileStream);
                 }
+                // Устанавливаем статус продукта
                 productDto.status = Enums.revengeancestatus.In_stock.ToString();
+                // Создаем новый продукт
                 var product = new Products
                 {
                     name = productDto.name,
@@ -68,15 +88,19 @@ namespace Lombard_Mongo_Api.Controllers
                     price = productDto.price,
                     status = productDto.status,
                     IsDeleted = productDto.IsDeleted,
-                    LombardId = productDto.LombardId,
-                    Brand = productDto.brand  // Добавляем поле бренд
+                    Brand = productDto.brand,  // Добавляем поле бренд
+                    _idLombard = productDto._idLombard // Устанавливаем _idLombard
                 };
+                // Добавляем продукт в базу данных
                 _dbRepository.InsertOne(product);
+                // Логируем информацию о добавлении продукта
                 _logger.LogInformation($"Продукт был добавлен: {product.name}");
+                // Возвращаем успешный результат
                 return Ok();
             }
             catch (Exception ex)
             {
+                // Обрабатываем ошибку добавления продукта
                 _logger.LogError(ex, "Произошла ошибка при добавлении продукта");
                 return StatusCode(500, $"Произошла ошибка: {ex.Message}");
             }
