@@ -57,20 +57,12 @@ namespace Lombard_Mongo_Api.Controllers
                 {
                     return Unauthorized(); // Если идентификатор пользователя не найден, возвращаем 401 Unauthorized
                 }
-
                 // Ищем пользователя по его идентификатору
                 var user = await _UserRepository.FindById(userId);
                 if (user == null)
                 {
                     return NotFound("User not found"); // Если пользователь не найден, возвращаем 404 NotFound
                 }
-
-                // Проверяем, что пользователь имеет право на создание ломбарда (проверка роли пользователя)
-                if (!User.IsInRole("Admin") && !User.IsInRole("User"))
-                {
-                    return Forbid(); // Если у пользователя нет прав на создание ломбарда, возвращаем 403 Forbidden
-                }
-
                 // Проверяем, что пользователь еще не имеет ломбарда
                 if (!string.IsNullOrEmpty(user._idLombard))
                 {
