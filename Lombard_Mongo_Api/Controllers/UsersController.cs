@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using System.Diagnostics.Tracing;
 using System.Linq.Expressions;
 
 namespace Lombard_Mongo_Api.Controllers
@@ -88,11 +89,18 @@ namespace Lombard_Mongo_Api.Controllers
                 {
                     return BadRequest("This username already exist, please choose another one");
                 }
-                var idlombard =await  _LombardRepository.FindById(obj._idLombard);
-                if(idlombard == null)
+
+                var emailCheck = await _UserRepository.FindOne(p => p.email == obj.email);
+                if (emailCheck !=null)
+                {
+                    return BadRequest("Account with such email already exis. Choose another one or log into you account");
+                }
+                var LombardName =await  _LombardRepository.FindOne(p=> p.lombard_name == obj.LombardName);
+                if(LombardName == null)
                 {
                     return BadRequest("This Lombard does not exist");
                 }
+                else
                 {
                     _userService.CreatePasswordHash(obj.password, out byte[] passwordHash, out byte[] passwordSalt);
 
@@ -105,7 +113,7 @@ namespace Lombard_Mongo_Api.Controllers
                         role = Enums.Role.Moderator.ToString(),
                         email = obj.email,
                         number = obj.number,
-                        _idLombard = obj._idLombard
+                        _idLombard = LombardName.Id
                     };
                     _UserRepository.InsertOne(users);
                     return Ok();
@@ -212,5 +220,50 @@ namespace Lombard_Mongo_Api.Controllers
                 return BadRequest(ex.Message);
             }
         }
+        
+        [HttpPost("AddAdmin")]
+        public async Task<ActionResult> AddAdmin(UsersDto obj)
+        {
+            try
+            {
+                // Подготовьте лямбда-выражение для фильтрации
+                Expression<Func<Users, bool>> filterExpression = u => u.username == obj.username;
+                // Вызовите метод FindOne с этим фильтром
+                var user = await _UserRepository.FindOne(filterExpression);
+                if (user != null)
+                {
+                    return BadRequest("This username already exist, please choose another one");
+                }
+                var emailCheck = await _UserRepository.FindOne(p => p.email == obj.email);
+                if (emailCheck != null)
+                {
+                    return BadRequest("Account with such email already exis. Choose another one or log into you account");
+                }
+                else
+                {
+                    _userService.CreatePasswordHash(obj.password, out byte[] passwordHash, out byte[] passwordSalt);
+
+                    var users = new Users
+                    {
+                        Id = "",
+                        username = obj.username,
+                        PasswordHash = passwordHash,
+                        PasswordSalt = passwordSalt,
+                        role = Enums.Role.Admin.ToString(),
+                        email = obj.email,
+                        number = obj.number,
+                        _idLombard = null
+                    };
+                    _UserRepository.InsertOne(users);
+                    return Ok();
+                }
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+      
     }
+
 }

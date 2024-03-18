@@ -98,6 +98,11 @@ namespace Lombard_Mongo_Api.Controllers
                 {
                     return BadRequest("This username already exist, please choose another one");
                 }
+                var emailCheck = await _dbRepository.FindOne(p => p.email == obj.email);
+                if (emailCheck != null)
+                {
+                    return BadRequest("Account with such email already exis. Choose another one or log into you account");
+                }
                 _userService.CreatePasswordHash(obj.password, out byte[] passwordHash, out byte[] passwordSalt);
 
                 var users = new Users

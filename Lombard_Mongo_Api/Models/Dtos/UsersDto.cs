@@ -54,8 +54,8 @@ namespace Lombard_Mongo_Api.Models.Dtos
         [BsonElement("number")]
         public string number { get; set; } = string.Empty;
 
-        [BsonElement("_idLombard")]
-        public string _idLombard { get; set; }
+        [BsonElement("LombardName")]
+        public string LombardName { get; set; }
     }
     public class ModUpdateDto
     {
