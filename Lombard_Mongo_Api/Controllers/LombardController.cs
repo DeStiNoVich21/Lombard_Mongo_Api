@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using MongoDB.Driver;
 using System;
 namespace Lombard_Mongo_Api.Controllers
 {
@@ -18,13 +19,15 @@ namespace Lombard_Mongo_Api.Controllers
     public class LombardController : ControllerBase
     {
         private readonly IMongoRepository<Lombards> _LombardsRepository;
+        private readonly IMongoRepository<Products> _ProductsRepository;
         private readonly IConfiguration _configuration;
         private readonly ILogger<LombardController> _logger;
-        public LombardController(IConfiguration configuration, IMongoRepository<Lombards> dbRepository, ILogger<LombardController> logger)
+        public LombardController(IConfiguration configuration, IMongoRepository<Lombards> lombardsRepository, ILogger<LombardController> logger, IMongoRepository<Products> productsRepositor)
         {
             _configuration = configuration;
-            _LombardsRepository = dbRepository;
+            _LombardsRepository = lombardsRepository;
             _logger = logger;
+            _ProductsRepository = productsRepositor;
         }
 
         [HttpGet("GetAll")]
@@ -43,8 +46,6 @@ namespace Lombard_Mongo_Api.Controllers
                 return StatusCode(500, $"An error has occurred: {ex.Message}");
             }
         }
-
-
         [HttpPost("addLombard")]
         public async Task<ActionResult> AddLombard(pointLombardDto addLombard)
         {
@@ -127,8 +128,25 @@ namespace Lombard_Mongo_Api.Controllers
                 {
                     return NotFound();
                 }
-                lombard.deleted = true; // Устанавливаем флаг удаления
-                _LombardsRepository.ReplaceOne(lombard); // Заменяем документ в БД
+
+                // Найдем все продукты, принадлежащие данному ломбарду
+                var filter = Builders<Products>.Filter.Eq(p => p._idLombard, lombard.Id);
+                var products = await _ProductsRepository.FindAsync(filter);
+                if (products != null && products.Any())
+                {
+                    foreach (var product in products)
+                    {
+                        // Устанавливаем флаг удаления для продукта
+                        product.IsDeleted = true;
+                        // Обновляем продукт в БД
+                        _ProductsRepository.ReplaceOne(product);
+                    }
+                }
+
+                // Устанавливаем флаг удаления для ломбарда
+                lombard.deleted = true;
+                // Обновляем ломбарда в БД
+                _LombardsRepository.ReplaceOne(lombard);
 
                 _logger.LogInformation($"Lombard has been soft deleted: {id}");
                 return NoContent();
@@ -139,7 +157,6 @@ namespace Lombard_Mongo_Api.Controllers
                 return StatusCode(500, $"An error has occurred: {ex.Message}");
             }
         }
-
         [HttpDelete("Name")]
         public async Task<IActionResult> DeleteLombardByName(string name)
         {

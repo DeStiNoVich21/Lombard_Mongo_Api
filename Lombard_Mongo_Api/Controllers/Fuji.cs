@@ -19,14 +19,14 @@ namespace Lombard_Mongo_Api.Controllers
     public class Fuji : ControllerBase
     {
         private readonly IWebHostEnvironment _hostingEnvironment;
-        private readonly IMongoRepository<Products> _dbRepository;
+        private readonly IMongoRepository<Products> _ProductsRepository;
         private readonly IMongoRepository<Users> _UserRepository;
         private readonly IConfiguration _configuration;
         private readonly ILogger<Fuji> _logger;
         public Fuji(IConfiguration configuration, IMongoRepository<Products> dbRepository, ILogger<Fuji> logger, IWebHostEnvironment hostingEnvironment, IMongoRepository<Users> UserRepository)
         {
             _configuration = configuration;
-            _dbRepository = dbRepository;
+            _ProductsRepository = dbRepository;
             _logger = logger;
             _hostingEnvironment = hostingEnvironment;
             _UserRepository = UserRepository;
@@ -75,7 +75,7 @@ namespace Lombard_Mongo_Api.Controllers
                     _idLombard = user._idLombard // Устанавливаем значение идентификатора ломбарда из пользователя
                 };
                 // Добавляем продукт в базу данных
-                _dbRepository.InsertOne(product);
+                _ProductsRepository.InsertOne(product);
                 // Логируем информацию о добавлении продукта
                 _logger.LogInformation($"Продукт был добавлен: {product.name}");
                 // Возвращаем успешный результат
@@ -94,7 +94,7 @@ namespace Lombard_Mongo_Api.Controllers
         {
             try
             {
-                var products = _dbRepository.AsQueryable().Where(p => !p.IsDeleted).ToList();
+                var products = _ProductsRepository.AsQueryable().Where(p => !p.IsDeleted).ToList();
                 _logger.LogInformation($"製品のリストが取得されました");
                 return Ok(products);
             }
@@ -110,7 +110,7 @@ namespace Lombard_Mongo_Api.Controllers
         {
             try
             {
-                var product = await _dbRepository.FindById(id);
+                var product = await _ProductsRepository.FindById(id);
                 if (product == null)
                 {
                     return NotFound($"ID {id} не найден");
@@ -130,7 +130,7 @@ namespace Lombard_Mongo_Api.Controllers
         {
             try
             {
-                var allProducts = await _dbRepository.GetAllAsync(); // Загрузка всех продуктов из базы данных
+                var allProducts = await _ProductsRepository.GetAllAsync(); // Загрузка всех продуктов из базы данных
                 var matchingProducts = allProducts
                     .Select(p => new { Category = p.category.ToLower(), ImageName = Path.GetFileNameWithoutExtension(p.ImageFileName)?.ToLower(), Name = p.name }) // Добавляем поле имени
                     .Where(p => p.ImageName != null && p.Category == p.ImageName)
@@ -151,7 +151,7 @@ namespace Lombard_Mongo_Api.Controllers
         {
             try
             {
-                var products = _dbRepository.AsQueryable().Where(p => p.category.ToLower() == category.ToLower() && !p.IsDeleted).ToList();
+                var products = _ProductsRepository.AsQueryable().Where(p => p.category.ToLower() == category.ToLower() && !p.IsDeleted).ToList();
                 if (products.Count == 0)
                 {
                     return NotFound($"No products found in category: {category}");
@@ -179,13 +179,13 @@ namespace Lombard_Mongo_Api.Controllers
                 {
                     return BadRequest("Неверное значение для поля IsDeleted. Значение должно быть true или false.");
                 }
-                var product = await _dbRepository.FindById(id);
+                var product = await _ProductsRepository.FindById(id);
                 if (product == null)
                 {
                     return NotFound($"Product with ID {id} not found");
                 }
                 product.IsDeleted = isDeletedValue;
-                _dbRepository.ReplaceOne(product);
+                _ProductsRepository.ReplaceOne(product);
                 _logger.LogInformation($"IsDeleted value for product with ID {id} has been updated to {isDeletedValue}");
                 return Ok();
             }
@@ -205,7 +205,7 @@ namespace Lombard_Mongo_Api.Controllers
                 {
                     return Unauthorized("User is not authenticated");
                 }
-                var deletedProducts = _dbRepository.AsQueryable().Where(p => p.IsDeleted).ToList();
+                var deletedProducts = _ProductsRepository.AsQueryable().Where(p => p.IsDeleted).ToList();
                 _logger.LogInformation($"Deleted products retrieved successfully");
                 return Ok(deletedProducts);
             }
@@ -248,13 +248,13 @@ namespace Lombard_Mongo_Api.Controllers
                 {
                     return BadRequest("Invalid status value. Status must be either 'Reserved' or 'In_stock'.");
                 }
-                var product = await _dbRepository.FindById(id);
+                var product = await _ProductsRepository.FindById(id);
                 if (product == null)
                 {
                     return NotFound($"Product with ID {id} not found");
                 }
                 product.status = status;
-                _dbRepository.ReplaceOne(product);
+                _ProductsRepository.ReplaceOne(product);
                 _logger.LogInformation($"Status for product with ID {id} has been updated to {status}");
                 return Ok();
             }
@@ -278,7 +278,7 @@ namespace Lombard_Mongo_Api.Controllers
                 {
                     return BadRequest("Максимальная цена не может быть отрицательной.");
                 }
-                var productsQuery = _dbRepository.AsQueryable();
+                var productsQuery = _ProductsRepository.AsQueryable();
                 if (!string.IsNullOrEmpty(category))
                 {
                     productsQuery = productsQuery.Where(p => p.category.ToLower() == category.ToLower());
@@ -350,7 +350,7 @@ namespace Lombard_Mongo_Api.Controllers
                     name = name,
                     IsDeleted = true // Устанавливаем значение IsDeleted в true
                 };
-                _dbRepository.InsertOne(product);
+                _ProductsRepository.InsertOne(product);
                 _logger.LogInformation($"Продукт '{name}' с изображением был добавлен в категорию: {category}");
                 return Ok();
             }
@@ -370,7 +370,7 @@ namespace Lombard_Mongo_Api.Controllers
                 {
                     return Unauthorized("User is not authenticated");
                 }
-                var existingProduct = await _dbRepository.FindById(id);
+                var existingProduct = await _ProductsRepository.FindById(id);
                 if (existingProduct == null)
                 {
                     return NotFound($"Product with ID {id} not found");
@@ -396,7 +396,7 @@ namespace Lombard_Mongo_Api.Controllers
                     }
                     existingProduct.ImageFileName = fileName;
                 }
-                _dbRepository.ReplaceOne(existingProduct);
+                _ProductsRepository.ReplaceOne(existingProduct);
                 _logger.LogInformation($"Product with ID {id} has been updated successfully");
                 return Ok();
             }
