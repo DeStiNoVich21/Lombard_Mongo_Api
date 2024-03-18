@@ -18,7 +18,8 @@
         public enum revengeancestatus
         {
             Reserved,
-            In_stock
+            In_stock,
+            Bought
         }
     }
 }

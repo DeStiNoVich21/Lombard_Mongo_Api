@@ -1,4 +1,5 @@
-﻿using Lombard_Mongo_Api.Models;
+﻿using Lombard_Mongo_Api.Helpers;
+using Lombard_Mongo_Api.Models;
 using Lombard_Mongo_Api.Models.Dtos;
 using Lombard_Mongo_Api.MongoRepository.GenericRepository;
 using Lombard_Mongo_Api.Services;
@@ -126,7 +127,7 @@ namespace Lombard_Mongo_Api.Controllers
                 var user = _contextAccessor.HttpContext.User;
                 var userId = user.Claims.FirstOrDefault(c => c.Type == "UserId");
 
-                var productcheck = _productsRepository.FindById(obj._idProduct.ToString()) ;
+                var productcheck = _productsRepository.FindById(obj._idProduct.ToString()).Result ;
 
                 if (productcheck != null)
                 {
@@ -135,9 +136,24 @@ namespace Lombard_Mongo_Api.Controllers
                         Id = "",
                         _idUser = userId.ToString(),
                         _idProduct = obj._idProduct.ToString(),
-                        status = obj.status
+                        status = Enums.TransactionState.InQue.ToString(),
                     };
                     _TransactionRepository.InsertOne(transaction);
+                    var product = new Products
+                    {
+                        Id = productcheck.Id,
+                        name = productcheck.name,
+                        category = productcheck.category,
+                        Brand = productcheck.Brand,
+                        ImageFileName = productcheck.ImageFileName,
+                        description = productcheck.description,
+                        price = productcheck.price,
+                        status = Enums.revengeancestatus.Reserved.ToString(),
+                        IsDeleted = productcheck.IsDeleted,
+                        _idLombard = productcheck._idLombard
+                        
+                    };
+                    _productsRepository.ReplaceOne(product);
                     return Ok();
                 }
                 else
@@ -148,6 +164,107 @@ namespace Lombard_Mongo_Api.Controllers
             catch (Exception ex)
             {
                 return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpPut("CancelTransaction")]
+        public async Task<ActionResult> CancelTransaction(string id)
+        {
+            try
+            {
+                
+                var transaction = _TransactionRepository.FindById(id).Result;
+                var productcheck = _productsRepository.FindById(transaction._idProduct.ToString()).Result;
+                if (productcheck == null)
+                {
+                    return NotFound("Such product does not exist");
+                }
+                if (transaction != null) 
+                {
+                    var  CancledTransac = new TransactionHistory
+                    {
+                        Id = transaction.Id,
+                        _idUser = transaction._idUser.ToString(),
+                        _idProduct = transaction._idProduct.ToString(),
+                        status = Enums.TransactionState.Rejected.ToString(),
+                    };
+                   
+                    var product = new Products
+                    {
+                        Id = productcheck.Id,
+                        name = productcheck.name,
+                        category = productcheck.category,
+                        Brand = productcheck.Brand,
+                        ImageFileName = productcheck.ImageFileName,
+                        description = productcheck.description,
+                        price = productcheck.price,
+                        status = Enums.revengeancestatus.In_stock.ToString(),
+                        IsDeleted = productcheck.IsDeleted,
+                        _idLombard = productcheck._idLombard
+
+                    };
+                    _TransactionRepository.ReplaceOne(transaction);
+                    _productsRepository.ReplaceOne(product);
+                    return Ok();
+                }
+                else
+                {
+                    return NotFound("Such transaction does not exist");
+                }
+            }
+            catch(Exception ex) 
+            {
+                return BadRequest(ex);
+            }
+        }
+
+        [HttpPut("CompleteTransaction")]
+        public async Task<ActionResult> CompleteTransaction(string id)
+        {
+            try
+            {
+                var transaction = _TransactionRepository.FindById(id).Result;
+                var productcheck = _productsRepository.FindById(transaction._idProduct.ToString()).Result;
+                if (productcheck == null)
+                {
+                    return NotFound("Such product does not exist");
+                }
+                if (transaction != null)
+                {
+                    var CancledTransac = new TransactionHistory
+                    {
+                        Id = transaction.Id,
+                        _idUser = transaction._idUser.ToString(),
+                        _idProduct = transaction._idProduct.ToString(),
+                        status = Enums.TransactionState.Completed.ToString(),
+                    };
+
+                    var product = new Products
+                    {
+                        Id = productcheck.Id,
+                        name = productcheck.name,
+                        category = productcheck.category,
+                        Brand = productcheck.Brand,
+                        ImageFileName = productcheck.ImageFileName,
+                        description = productcheck.description,
+                        price = productcheck.price,
+                        status = Enums.revengeancestatus.Bought.ToString(),
+                        IsDeleted = productcheck.IsDeleted,
+                        _idLombard = productcheck._idLombard
+
+                    };
+                    _TransactionRepository.ReplaceOne(transaction);
+                    _productsRepository.ReplaceOne(product);
+                    return Ok();
+                }
+                else
+                {
+                    return NotFound("Such transaction does not exist");
+                }
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex);
             }
         }
 
