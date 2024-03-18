@@ -9,6 +9,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using System;
+using System.Security.Claims;
 namespace Lombard_Mongo_Api.Controllers
 {
     [Route("api/[controller]")]
@@ -20,24 +21,23 @@ namespace Lombard_Mongo_Api.Controllers
     {
         private readonly IMongoRepository<Lombards> _LombardsRepository;
         private readonly IMongoRepository<Products> _ProductsRepository;
+        private readonly IMongoRepository<Users> _UserRepository;
         private readonly IConfiguration _configuration;
         private readonly ILogger<LombardController> _logger;
-        public LombardController(IConfiguration configuration, IMongoRepository<Lombards> lombardsRepository, ILogger<LombardController> logger, IMongoRepository<Products> productsRepositor)
+        public LombardController(IConfiguration configuration, IMongoRepository<Lombards> lombardsRepository, ILogger<LombardController> logger, IMongoRepository<Products> productsRepositor, IMongoRepository<Users> userRepository)
         {
             _configuration = configuration;
             _LombardsRepository = lombardsRepository;
             _logger = logger;
             _ProductsRepository = productsRepositor;
+            _UserRepository = userRepository;
         }
-
         [HttpGet("GetAll")]
         public async Task<ActionResult> GetAllLombards()
         {
             try
             {
-
                 var user = _LombardsRepository.AsQueryable().ToList();
-                
                 return Ok(user);
             }
             catch (Exception ex)
@@ -51,12 +51,33 @@ namespace Lombard_Mongo_Api.Controllers
         {
             try
             {
-
-                var user = await _LombardsRepository.FindOne(p=> p.lombard_name == addLombard.name);
-                if (user != null)
+                // Получаем идентификатор пользователя из токена аутентификации
+                string userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (userId == null)
                 {
-                    return BadRequest("This username already exist, please choose another one");
+                    return Unauthorized(); // Если идентификатор пользователя не найден, возвращаем 401 Unauthorized
                 }
+
+                // Ищем пользователя по его идентификатору
+                var user = await _UserRepository.FindById(userId);
+                if (user == null)
+                {
+                    return NotFound("User not found"); // Если пользователь не найден, возвращаем 404 NotFound
+                }
+
+                // Проверяем, что пользователь имеет право на создание ломбарда (проверка роли пользователя)
+                if (!User.IsInRole("Admin") && !User.IsInRole("User"))
+                {
+                    return Forbid(); // Если у пользователя нет прав на создание ломбарда, возвращаем 403 Forbidden
+                }
+
+                // Проверяем, что пользователь еще не имеет ломбарда
+                if (!string.IsNullOrEmpty(user._idLombard))
+                {
+                    return BadRequest("User already has a lombard"); // Если пользователь уже имеет ломбард, возвращаем 400 BadRequest
+                }
+
+                // Создаем новый ломбард
                 Lombards lombard = new Lombards
                 {
                     Id = "",
@@ -64,10 +85,14 @@ namespace Lombard_Mongo_Api.Controllers
                     address = addLombard.address,
                     number = addLombard.number,
                     deleted = false
-                    
                 };
                 _LombardsRepository.InsertOne(lombard);
                 _logger.LogInformation($"Lombard has been added: {lombard.lombard_name}");
+
+                // Присваиваем id ломбарда пользователю и сохраняем изменения в БД
+                user._idLombard = lombard.Id;
+                _UserRepository.ReplaceOne(user);
+
                 return Ok();
             }
             catch (Exception ex)
@@ -76,6 +101,7 @@ namespace Lombard_Mongo_Api.Controllers
                 return StatusCode(500, $"An error has occurred: {ex.Message}");
             }
         }
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetLombardById(string id)
         {
