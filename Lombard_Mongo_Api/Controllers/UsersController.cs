@@ -96,6 +96,7 @@ namespace Lombard_Mongo_Api.Controllers
                     return BadRequest("Account with such email already exis. Choose another one or log into you account");
                 }
                 var LombardName =await  _LombardRepository.FindOne(p=> p.lombard_name == obj.LombardName);
+
                 if(LombardName == null)
                 {
                     return BadRequest("This Lombard does not exist");
