@@ -71,8 +71,8 @@ namespace Lombard_Mongo_Api.Controllers
                 return BadRequest(ex.Message);
             }
         }
-        [HttpPost("refresh-token")]
-        public IActionResult RefreshToken([FromBody] string refreshToken)
+        [HttpGet("refresh-token")]
+        public IActionResult RefreshToken(string refreshToken)
         {
             try
             {
@@ -106,12 +106,12 @@ namespace Lombard_Mongo_Api.Controllers
                 var user = _dbRepository.FindOne(filterExpression).Result;
 
                 var claims = new List<Claim>
-                {
-                      new Claim("UserId", user.Id.ToString()),
-                      new Claim(ClaimTypes.Role.ToString() , user.role)
-                };
+        {
+            new Claim("UserId", user.Id.ToString()),
+            new Claim(ClaimTypes.Role.ToString() , user.role)
+        };
                 // Генерируем новый access token
-                var accessToken =  GenerateAccessToken(claims);
+                var accessToken = GenerateAccessToken(claims);
 
                 var response = new
                 {
