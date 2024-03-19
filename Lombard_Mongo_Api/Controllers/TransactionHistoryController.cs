@@ -123,10 +123,8 @@ namespace Lombard_Mongo_Api.Controllers
         {
             try
             {
-
                 var user = _contextAccessor.HttpContext.User;
                 var userId = user.Claims.FirstOrDefault(c => c.Type == "UserId");
-
                 var productcheck = _productsRepository.FindById(obj._idProduct.ToString()).Result ;
 
                 if (productcheck != null)
@@ -296,8 +294,5 @@ namespace Lombard_Mongo_Api.Controllers
                 return BadRequest(ex.Message);
             }
         }
-        
-
-
     }
 }

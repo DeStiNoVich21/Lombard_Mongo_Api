@@ -36,7 +36,7 @@ namespace Lombard_Mongo_Api.Controllers
             _userService = userRepository;
         }
         [HttpPost("Login")]
-        public async Task<ActionResult> Get(LoginDto login)
+        public async Task<ActionResult<string>> Get(LoginDto login)
         {
             try
             {
@@ -54,36 +54,20 @@ namespace Lombard_Mongo_Api.Controllers
                 {
                     return Unauthorized("Invalid password");
                 }
-
-                var claims = new List<Claim>
-                {
-                      new Claim("UserId", user.Id.ToString()),
-                      new Claim(ClaimTypes.Role.ToString() , user.role)
-                };
-
+                // Генерируем рефреш токен
                 var refreshclaim = new List<Claim>
-                {
-                      new Claim("Username", user.username.ToString())
-                };
-
-                
-
-                var encodedJwt = GenerateAccessToken(claims);
+        {
+            new Claim("Username", user.username.ToString())
+        };
                 var refreshJwt = GenerateRefreshToken(refreshclaim);
-                var response = new
-                {
-                    encodedJwt = encodedJwt,
-                    refreshJwt = refreshJwt
-                };
 
-                return Ok(response);
+                return Ok(refreshJwt);
             }
             catch (Exception ex)
             {
                 return BadRequest(ex.Message);
             }
         }
-
         [HttpPost("refresh-token")]
         public IActionResult RefreshToken([FromBody] string refreshToken)
         {
