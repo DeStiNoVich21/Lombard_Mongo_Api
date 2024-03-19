@@ -61,21 +61,19 @@ namespace Lombard_Mongo_Api.Controllers
                       new Claim(ClaimTypes.Role.ToString() , user.role)
                 };
 
-                SymmetricSecurityKey GetSymmetricSecurityKey() =>
-                    new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtSettings:Key"]));
+                var refreshclaim = new List<Claim>
+                {
+                      new Claim("Username", user.username.ToString())
+                };
 
-                // Создаем JWT-токен
-                var jwt = new JwtSecurityToken(
-                    issuer: _configuration["JwtSettings:Issuer"],
-                    audience: _configuration["JwtSettings:Audience"],
-                    claims: claims,
-                    expires: DateTime.UtcNow.Add(TimeSpan.FromDays(30)),
-                    signingCredentials: new SigningCredentials(GetSymmetricSecurityKey(), SecurityAlgorithms.HmacSha256));
+                
 
-                var encodedJwt = new JwtSecurityTokenHandler().WriteToken(jwt);
+                var encodedJwt = GenerateAccessToken(claims);
+                var refreshJwt = GenerateRefreshToken(refreshclaim);
                 var response = new
                 {
                     encodedJwt = encodedJwt,
+                    refreshJwt = refreshJwt
                 };
 
                 return Ok(response);
@@ -85,6 +83,62 @@ namespace Lombard_Mongo_Api.Controllers
                 return BadRequest(ex.Message);
             }
         }
+
+        [HttpPost("refresh-token")]
+        public IActionResult RefreshToken([FromBody] string refreshToken)
+        {
+            try
+            {
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var key = Encoding.UTF8.GetBytes(_configuration["JwtSettings:Key"]);
+                var tokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    ValidateIssuer = true,
+                    ValidIssuer = _configuration["JwtSettings:Issuer"],
+                    ValidateAudience = true,
+                    ValidAudience = _configuration["JwtSettings:Audience"],
+                    ValidateLifetime = false // Не проверять срок действия токена
+                };
+
+                SecurityToken securityToken;
+                var principal = tokenHandler.ValidateToken(refreshToken, tokenValidationParameters, out securityToken);
+                var jwtSecurityToken = securityToken as JwtSecurityToken;
+
+                // Проверяем, что токен обновления имеет правильный формат и содержит все необходимые данные
+                if (jwtSecurityToken == null || !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    return BadRequest("Invalid refresh token");
+                }
+
+                // Получаем идентификатор пользователя из токена обновления
+                // Получаем имя пользователя из refresh token
+                var username = principal.FindFirst("Username").Value;
+                Expression<Func<Users, bool>> filterExpression = u => u.username == username;
+                var user = _dbRepository.FindOne(filterExpression).Result;
+
+                var claims = new List<Claim>
+                {
+                      new Claim("UserId", user.Id.ToString()),
+                      new Claim(ClaimTypes.Role.ToString() , user.role)
+                };
+                // Генерируем новый access token
+                var accessToken =  GenerateAccessToken(claims);
+
+                var response = new
+                {
+                    accessToken = accessToken
+                };
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
         [HttpPost("Registration")]
         public async Task<ActionResult> Post(UsersDto obj)
         {
@@ -125,7 +179,39 @@ namespace Lombard_Mongo_Api.Controllers
             }
         }
 
-        
-        
+        private string GenerateAccessToken(List<Claim> claims)
+        {
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtSettings:Key"]));
+            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var expires = DateTime.UtcNow.Add(TimeSpan.FromHours(1)); // Устанавливаем срок действия refresh token
+
+            var token = new JwtSecurityToken(
+                issuer: _configuration["JwtSettings:Issuer"],
+                audience: _configuration["JwtSettings:Audience"],
+                claims: claims,
+                expires: expires,
+                signingCredentials: credentials
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        private string GenerateRefreshToken(List<Claim> claims)
+        {
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtSettings:Key"]));
+            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var expires = DateTime.UtcNow.Add(TimeSpan.FromDays(30)); // Устанавливаем срок действия refresh token
+
+            var token = new JwtSecurityToken(
+                issuer: _configuration["JwtSettings:Issuer"],
+                audience: _configuration["JwtSettings:Audience"],
+                claims: claims,
+                expires: expires,
+                signingCredentials: credentials
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
     }
 }
