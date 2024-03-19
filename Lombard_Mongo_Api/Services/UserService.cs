@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -10,7 +11,7 @@ namespace Lombard_Mongo_Api.Services
 {
     public class UserService : IUserService
     {
-
+       
         private readonly IConfiguration _configuration;
         private readonly IHttpContextAccessor _httpContextAccessor;
         public UserService(IConfiguration configuration, IHttpContextAccessor httpContextAccessor)
@@ -64,5 +65,29 @@ namespace Lombard_Mongo_Api.Services
                 return computedHash.SequenceEqual(passwordHash);
             }
         }
+        public ClaimsPrincipal ValidateTokenAndGetPrincipal(string token)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            try
+            {
+                var principal = tokenHandler.ValidateToken(token, new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidIssuer = _configuration["JwtSettings:Issuer"],
+                    ValidAudience = _configuration["JwtSettings:Audience"],
+                    IssuerSigningKey = new SymmetricSecurityKey(Convert.FromBase64String(_configuration["JwtSettings:Key"]))
+                }, out var validatedToken);
+
+                return principal;
+            }
+            catch
+            {
+                // В случае ошибки валидации, например, истек срок действия токена
+                return null;
+            }
+        }
+
     }
 }

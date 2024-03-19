@@ -69,7 +69,7 @@ namespace Lombard_Mongo_Api.Controllers
                     issuer: _configuration["JwtSettings:Issuer"],
                     audience: _configuration["JwtSettings:Audience"],
                     claims: claims,
-                    expires: DateTime.UtcNow.Add(TimeSpan.FromHours(3)),
+                    expires: DateTime.UtcNow.Add(TimeSpan.FromDays(30)),
                     signingCredentials: new SigningCredentials(GetSymmetricSecurityKey(), SecurityAlgorithms.HmacSha256));
 
                 var encodedJwt = new JwtSecurityTokenHandler().WriteToken(jwt);
@@ -124,6 +124,8 @@ namespace Lombard_Mongo_Api.Controllers
                 return BadRequest(ex.Message);
             }
         }
+
+        
         
     }
 }
