@@ -16,7 +16,7 @@ namespace Lombard_Mongo_Api.Controllers
     [Route("api/[controller]")]
     [ApiController]
     [EnableCors("_myAllowSpecificOrigins")]
-    public class Fuji : ControllerBase
+    public class Fuji : Controller
     {
         private readonly IWebHostEnvironment _hostingEnvironment;
         private readonly IMongoRepository<Products> _ProductsRepository;

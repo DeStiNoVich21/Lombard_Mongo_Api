@@ -17,7 +17,7 @@ namespace Lombard_Mongo_Api.Controllers
     //[Authorize(Roles = "admin")] 
     [EnableCors("_myAllowSpecificOrigins")]
     [Authorize] 
-    public class LombardController : ControllerBase
+    public class LombardController : Controller
     {
         private readonly IMongoRepository<Lombards> _LombardsRepository;
         private readonly IMongoRepository<Products> _ProductsRepository;

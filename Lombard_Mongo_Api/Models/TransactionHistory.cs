@@ -6,6 +6,7 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using Microsoft.AspNetCore.Components.Web;
 using Lombard_Mongo_Api.MongoRepository.GenericRepository;
+using System.Reflection;
 
 namespace Lombard_Mongo_Api.Models
 {
@@ -13,7 +14,6 @@ namespace Lombard_Mongo_Api.Models
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
-
         public string Id { get; set; } = string.Empty;
 
         [BsonElement("_idUser")]
@@ -23,6 +23,6 @@ namespace Lombard_Mongo_Api.Models
         public string _idProduct { get; set; } = string.Empty;
 
         [BsonElement("Status")]
-        public string status {  get; set; } = string.Empty;
+        public string status { get; set; } = string.Empty;
     }
 }

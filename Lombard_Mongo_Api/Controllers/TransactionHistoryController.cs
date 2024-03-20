@@ -8,6 +8,8 @@ using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using MongoDB.Bson;
+using MongoDB.Driver;
 using System;
 using System.Linq.Expressions;
 using System.Security.Claims;
@@ -24,20 +26,22 @@ namespace Lombard_Mongo_Api.Controllers
         private readonly IMongoRepository<TransactionHistory> _TransactionRepository;
         private readonly IMongoRepository<Products> _productsRepository;
         private readonly IMongoRepository<Users> _usersRepository;
+        private readonly IMongoRepository<Lombards> _LombardsRepository;
         private readonly IHttpContextAccessor _contextAccessor;
 
         public TransactionHistoryController(IMongoRepository<TransactionHistory> dbRepository, IHttpContextAccessor httpContextAccessor,
-            IMongoRepository<Products> products, IMongoRepository<Users> usersrepository)
+            IMongoRepository<Products> products, IMongoRepository<Users> usersrepository, IMongoRepository<Lombards> lombardsRepository)
         {
             _TransactionRepository = dbRepository;
             _contextAccessor = httpContextAccessor;
             _productsRepository = products;
             _usersRepository = usersrepository;
+            _LombardsRepository = lombardsRepository;
         }
-
         [HttpGet("GetTransactionsList")]
         public async Task<ActionResult<IEnumerable<TransactionHistory>>> GetTransactionHistory()
         {
+
             try
             {
                 if (!User.Identity.IsAuthenticated)
@@ -52,28 +56,51 @@ namespace Lombard_Mongo_Api.Controllers
                 return StatusCode(500, $"Internal server error {ex.Message}");
             }
         }
-
-        [HttpGet("GetMyTransactions")]
-        public async Task<ActionResult<IEnumerable<TransactionHistory>>> GetMyTransactions(string id)
+        [HttpGet("GetMyTransactions/{userId}")]
+        public async Task<ActionResult<IEnumerable<List<TransactionProductDto>>>> GetMyTransactions(string userId)
         {
             try
             {
-                var mytransactions = _TransactionRepository.AsQueryable().Where(p => p._idUser == id);
-                if (mytransactions != null)
+                if (!ObjectId.TryParse(userId, out ObjectId userIdObjectId))
                 {
-                    return Ok(mytransactions);
+                    return BadRequest("Invalid userId format");
+                }
+
+                var myTransactions = _TransactionRepository.AsQueryable()
+                    .Where(p => p._idUser == userId)
+                    .ToList();
+
+                var transactionProductList = new List<List<TransactionProductDto>>();
+
+                foreach (var transaction in myTransactions)
+                {
+                    var product = await _productsRepository.FindById(transaction._idProduct);
+
+                    if (product != null)
+                    {
+                        var lombard = await _LombardsRepository.FindById(product._idLombard);
+
+                        transactionProductList.Add(new List<TransactionProductDto>
+                {
+                    new TransactionProductDto { Transaction = transaction, Product = product, Lombard = lombard }
+                });
+                    }
+                }
+
+                if (transactionProductList.Any())
+                {
+                    return Ok(transactionProductList);
                 }
                 else
                 {
-                    return NotFound("You didnt made any transactions");
+                    return NotFound("You didn't make any transactions.");
                 }
             }
             catch (Exception ex)
             {
-                return BadRequest(ex);
+                return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
-
         [HttpGet("GetTheTransaction")]
         public async Task<ActionResult<IEnumerable<TransactionHistory>>> GetTransaction(string id)
         {
@@ -123,20 +150,34 @@ namespace Lombard_Mongo_Api.Controllers
         {
             try
             {
-                var user = _contextAccessor.HttpContext.User;
-                var userId = user.Claims.FirstOrDefault(c => c.Type == "UserId");
-                var productcheck = _productsRepository.FindById(obj._idProduct.ToString()).Result ;
+                // Получение идентификатора пользователя из токена
+                var userId = User.FindFirst("UserId")?.Value;
+
+                var productcheck = await _productsRepository.FindById(obj._idProduct.ToString());
 
                 if (productcheck != null)
                 {
                     var transaction = new TransactionHistory
                     {
                         Id = "",
-                        _idUser = userId.ToString(),
+                        _idUser = userId, // Используем идентификатор пользователя из токена
                         _idProduct = obj._idProduct.ToString(),
                         status = Enums.TransactionState.InQue.ToString(),
                     };
                     _TransactionRepository.InsertOne(transaction);
+
+                    // Добавление ссылки на новую транзакцию в список "мои транзакции" пользователя
+                    var userEntity = await _usersRepository.FindById(userId);
+                    if (userEntity != null)
+                    {
+                        if (userEntity.MyTransactions == null)
+                        {
+                            userEntity.MyTransactions = new List<string>();
+                        }
+                        userEntity.MyTransactions.Add(transaction.Id);
+                        _usersRepository.ReplaceOne(userEntity);
+                    }
+
                     var product = new Products
                     {
                         Id = productcheck.Id,
@@ -149,7 +190,6 @@ namespace Lombard_Mongo_Api.Controllers
                         status = Enums.revengeancestatus.Reserved.ToString(),
                         IsDeleted = productcheck.IsDeleted,
                         _idLombard = productcheck._idLombard
-                        
                     };
                     _productsRepository.ReplaceOne(product);
                     return Ok();
@@ -271,7 +311,6 @@ namespace Lombard_Mongo_Api.Controllers
         {
             try
             {
-
                 var user = _contextAccessor.HttpContext.User;
                 var userId = user.Claims.FirstOrDefault(c => c.Type == "UserId");
                 var transac = _TransactionRepository.FindById(dto.Id);

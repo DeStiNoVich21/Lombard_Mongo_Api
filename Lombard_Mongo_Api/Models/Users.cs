@@ -38,6 +38,6 @@ namespace Lombard_Mongo_Api.Models
 
         [BsonElement("_idLombard")]
         public string _idLombard { get; set; }
-
+        public List<string> MyTransactions { get; set; } // Список ссылок на транзакции пользователя
     }
 }

@@ -27,4 +27,10 @@ namespace Lombard_Mongo_Api.Models.Dtos
         [BsonElement("Status")]
         public string status { get; set; } = string.Empty;
     }
+    public class TransactionProductDto
+    {
+        public TransactionHistory Transaction { get; set; }
+        public Products Product { get; set; }
+        public Lombards Lombard { get; set; }
+    }
 }
