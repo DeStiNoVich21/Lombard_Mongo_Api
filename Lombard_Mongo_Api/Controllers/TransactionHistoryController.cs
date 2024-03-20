@@ -210,99 +210,67 @@ namespace Lombard_Mongo_Api.Controllers
         {
             try
             {
-                
-                var transaction = _TransactionRepository.FindById(id).Result;
-                var productcheck = _productsRepository.FindById(transaction._idProduct.ToString()).Result;
-                if (productcheck == null)
-                {
-                    return NotFound("Such product does not exist");
-                }
-                if (transaction != null) 
-                {
-                    var  CancledTransac = new TransactionHistory
-                    {
-                        Id = transaction.Id,
-                        _idUser = transaction._idUser.ToString(),
-                        _idProduct = transaction._idProduct.ToString(),
-                        status = Enums.TransactionState.Rejected.ToString(),
-                    };
-                   
-                    var product = new Products
-                    {
-                        Id = productcheck.Id,
-                        name = productcheck.name,
-                        category = productcheck.category,
-                        Brand = productcheck.Brand,
-                        ImageFileName = productcheck.ImageFileName,
-                        description = productcheck.description,
-                        price = productcheck.price,
-                        status = Enums.revengeancestatus.In_stock.ToString(),
-                        IsDeleted = productcheck.IsDeleted,
-                        _idLombard = productcheck._idLombard
+                var transaction = await _TransactionRepository.FindById(id);
 
-                    };
-                    _TransactionRepository.ReplaceOne(transaction);
-                    _productsRepository.ReplaceOne(product);
-                    return Ok();
-                }
-                else
+                if (transaction == null)
                 {
                     return NotFound("Such transaction does not exist");
                 }
+
+                var product = await _productsRepository.FindById(transaction._idProduct);
+
+                if (product == null)
+                {
+                    return NotFound("Associated product not found");
+                }
+
+                // Update transaction status to Rejected
+                transaction.status = Enums.TransactionState.Rejected.ToString();
+                _TransactionRepository.ReplaceOne(transaction);
+
+                // Update product status to In_stock
+                product.status = Enums.revengeancestatus.In_stock.ToString();
+                _productsRepository.ReplaceOne(product);
+
+                return Ok("Transaction canceled successfully");
             }
-            catch(Exception ex) 
+            catch (Exception ex)
             {
-                return BadRequest(ex);
+                return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
-
         [HttpPut("CompleteTransaction")]
         public async Task<ActionResult> CompleteTransaction(string id)
         {
             try
             {
-                var transaction = _TransactionRepository.FindById(id).Result;
-                var productcheck = _productsRepository.FindById(transaction._idProduct.ToString()).Result;
-                if (productcheck == null)
-                {
-                    return NotFound("Such product does not exist");
-                }
-                if (transaction != null)
-                {
-                    var CancledTransac = new TransactionHistory
-                    {
-                        Id = transaction.Id,
-                        _idUser = transaction._idUser.ToString(),
-                        _idProduct = transaction._idProduct.ToString(),
-                        status = Enums.TransactionState.Completed.ToString(),
-                    };
+                var transaction = await _TransactionRepository.FindById(id);
 
-                    var product = new Products
-                    {
-                        Id = productcheck.Id,
-                        name = productcheck.name,
-                        category = productcheck.category,
-                        Brand = productcheck.Brand,
-                        ImageFileName = productcheck.ImageFileName,
-                        description = productcheck.description,
-                        price = productcheck.price,
-                        status = Enums.revengeancestatus.Bought.ToString(),
-                        IsDeleted = productcheck.IsDeleted,
-                        _idLombard = productcheck._idLombard
-
-                    };
-                    _TransactionRepository.ReplaceOne(transaction);
-                    _productsRepository.ReplaceOne(product);
-                    return Ok();
-                }
-                else
+                if (transaction == null)
                 {
                     return NotFound("Such transaction does not exist");
                 }
+
+                var product = await _productsRepository.FindById(transaction._idProduct);
+
+                if (product == null)
+                {
+                    return NotFound("Associated product not found");
+                }
+
+                // Update transaction status to Completed
+                transaction.status = Enums.TransactionState.Completed.ToString();
+                _TransactionRepository.ReplaceOne(transaction);
+
+                // Update product status to Bought
+                product.status = Enums.revengeancestatus.Bought.ToString();
+                _productsRepository.ReplaceOne(product);
+
+                return Ok("Transaction completed successfully");
             }
             catch (Exception ex)
             {
-                return BadRequest(ex);
+                return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
 
